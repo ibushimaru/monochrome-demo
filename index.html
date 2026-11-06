@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>余白の部屋 — 2コマデモ</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#e9e8e5;color:#242424;font-family:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN",sans-serif}button{font:inherit;cursor:pointer;color:inherit}button:focus-visible,input:focus-visible{outline:3px solid #777;outline-offset:5px}.app{max-width:1120px;margin:auto;padding:36px 32px}header{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #b8b7b3;padding-bottom:22px}.brand{font-size:12px;letter-spacing:.25em}h1{font-family:serif;font-size:28px;font-weight:500;margin:9px 0 0;letter-spacing:.12em}.badge{font-size:11px;letter-spacing:.15em;border:1px solid #aaa;padding:8px 12px}main{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:36px;margin-top:28px}.scene{position:relative;background:#faf9f6;border:1px solid #cecdc9;overflow:hidden;min-height:510px}.scene:before{content:"";position:absolute;inset:22px;border:1px solid #e4e2de;pointer-events:none}.scene-label{position:absolute;top:28px;left:32px;font-size:10px;letter-spacing:.18em;color:#888}.art-button{display:block;width:100%;border:0;background:none;padding:0;touch-action:manipulation;-webkit-tap-highlight-color:transparent}.art-button svg{display:block;width:100%;height:530px}.dialogue{margin:0 28px 24px;padding:18px 0 0;border-top:1px solid #d1cfca;position:relative}.name{font-size:12px;letter-spacing:.16em}.line{font-family:serif;font-size:19px;min-height:28px;margin:10px 0}.hint{font-size:11px;color:#777;line-height:1.8}.side{padding-top:12px}.eyebrow{font-size:10px;letter-spacing:.2em;color:#777}h2{font-family:serif;font-weight:400;font-size:23px;margin:10px 0 16px}.description{font-size:13px;line-height:1.9;color:#666}.primary{width:100%;padding:16px;border:1px solid #222;background:#292929;color:white;margin-top:18px}.primary:hover{background:#484848}.group{border-top:1px solid #bfbdba;padding-top:23px;margin-top:27px}.group-label{font-size:12px;display:block;margin-bottom:12px}.choices{display:flex;gap:6px}.choices button{flex:1;padding:10px 0;background:transparent;border:1px solid #b7b5b1;font-size:12px}.choices button[aria-pressed=true]{background:#faf9f6;border-color:#333;box-shadow:inset 0 -2px #333}.counter{display:flex;gap:8px;align-items:center;margin:15px 0}.frame{padding:10px 15px;border:1px solid #c3c1bc;font-size:12px;color:#888}.frame.active{background:#292929;color:white;border-color:#292929}.arrow{color:#888}.reset{background:none;border:0;border-bottom:1px solid #888;padding:4px 0;font-size:12px;color:#666;margin-top:20px}footer{display:flex;justify-content:space-between;margin-top:22px;font-size:10px;letter-spacing:.08em;color:#777}.face,.hand{display:none}.face.visible,.hand.visible{display:inline}@media(max-width:760px){.app{padding:20px 16px}main{grid-template-columns:1fr;gap:16px}.art-button svg{height:450px}.scene{min-height:0}.side{padding:5px 8px}.group{margin-top:20px}.badge{font-size:9px}h1{font-size:24px}footer{line-height:1.8;gap:20px}}
+</style>
+<div class="app"><header><div><div class="brand">MONOCHROME / STUDY 01</div><h1>余白の部屋</h1></div><span class="badge">INTERACTION DEMO</span></header>
+<main><section class="scene" aria-label="キャラクター画面"><span class="scene-label">午後、ひとやすみ。</span>
+<button class="art-button" id="art" aria-label="頭を撫でる。クリックするたびに手の位置が変わります">
+<svg viewBox="0 0 640 530" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="白黒の線画。セーターを着た成人女性の頭を手でそっと撫でる">
+<defs><pattern id="hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(25)"><path d="M0 0V7" stroke="#c3c0ba" stroke-width="1"/></pattern></defs>
+<g fill="none" stroke="#dedbd5" stroke-width="1"><path d="M87 90H553V450H87Z M87 320H553 M465 90V320"/><circle cx="478" cy="170" r="42"/><path d="M75 471H568"/></g>
+<ellipse cx="320" cy="502" rx="168" ry="12" fill="#e7e4de"/>
+<!-- Base illustration: adult character, fully clothed. -->
+<g stroke="#30302f" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round">
+<path d="M221 286Q188 210 211 154Q232 99 304 99Q390 90 421 157Q448 215 413 299L437 358Q373 390 319 359Q257 395 196 350Z" fill="#363635"/>
+<path d="M283 285L281 332Q320 357 358 331L353 281" fill="#faf8f3"/>
+<path d="M276 317Q227 327 204 356Q182 396 170 506H471Q462 399 437 355Q414 328 363 317L339 340H301Z" fill="#f2f0eb"/>
+<path d="M276 317L301 340L320 378L339 340L363 317L377 341L346 382H296L260 342Z" fill="url(#hatch)"/>
+<path d="M218 372L207 504M423 373L437 504M300 385L292 504M345 385L354 504" fill="none"/>
+<path d="M230 191Q218 182 217 207Q218 230 235 232M400 191Q417 184 414 209Q412 229 397 232" fill="#faf8f3"/>
+<path d="M232 176Q235 131 316 128Q390 128 400 179L395 237Q388 280 318 310Q251 285 238 245Z" fill="#faf8f3"/>
+<path d="M226 208Q223 135 281 120Q352 98 395 145Q411 168 406 212L381 174L366 146L362 193Q332 183 303 153Q292 182 251 194L252 166Z" fill="#363635"/>
+<path d="M261 149Q276 128 297 126M319 121Q357 121 376 143M219 248L225 315M407 246L405 315" fill="none" stroke="#777571" stroke-width="1.4"/>
+<path d="M315 224L311 242L320 244" fill="none" stroke="#938e86" stroke-width="1.5"/>
+<g id="face-neutral" class="face visible"><path d="M259 207Q274 201 287 207M346 207Q361 201 375 207" fill="none" stroke-width="1.7"/><path d="M258 220Q274 212 289 220M345 220Q360 212 376 220" fill="none"/><ellipse cx="275" cy="223" rx="4" ry="7" fill="#30302f"/><ellipse cx="359" cy="223" rx="4" ry="7" fill="#30302f"/><path d="M306 265Q319 269 330 264" fill="none" stroke-width="1.8"/></g>
+<g id="face-smile" class="face"><path d="M259 207Q274 201 287 207M346 207Q361 201 375 207M258 226Q274 210 289 225M345 225Q360 210 376 226" fill="none"/><path d="M301 260Q318 281 335 260" fill="none" stroke-width="2"/></g>
+<g id="face-relaxed" class="face"><path d="M259 206L286 208M347 208L374 206M258 219Q274 232 289 219M345 219Q360 232 376 219" fill="none"/><path d="M307 266Q319 271 331 265" fill="none" stroke-width="1.8"/></g>
+<g stroke="#b1aba3" stroke-width="1"><path d="M255 242L253 247M264 243L262 248M273 244L271 249M365 244L363 249M374 243L372 248M383 242L381 247"/></g>
+</g>
+<!-- Two discrete overlay frames, deliberately without interpolation. -->
+<g stroke="#30302f" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round">
+<g id="hand-0" class="hand visible"><path d="M493 58L407 86Q391 83 374 88L298 103Q289 107 295 114L355 108L279 124Q269 128 275 136L350 121L288 138Q279 141 285 148L357 133L314 149Q306 154 314 159L378 143Q407 139 427 115L509 91Z" fill="#faf8f3"/><path d="M472 60L490 102L526 88L511 46Z" fill="#dad7d1"/><path d="M380 107Q392 113 396 122" fill="none" stroke="#99938b" stroke-width="1.4"/></g>
+<g id="hand-1" class="hand"><path d="M466 53L380 81Q364 78 347 83L271 98Q262 102 268 109L328 103L252 119Q242 123 248 131L323 116L261 133Q252 136 258 143L330 128L287 144Q279 149 287 154L351 138Q380 134 400 110L482 86Z" fill="#faf8f3"/><path d="M445 55L463 97L499 83L484 41Z" fill="#dad7d1"/><path d="M353 102Q365 108 369 117" fill="none" stroke="#99938b" stroke-width="1.4"/><path d="M222 109L211 117M227 98L213 101" fill="none" stroke="#96918a" stroke-width="1.5"/></g>
+</g></svg></button>
+<div class="dialogue"><span class="name">しおり</span><p class="line" id="line" aria-live="polite">少し、休憩していこう。</p><div class="hint">イラストをクリックして、頭をそっと撫でる。</div></div></section>
+<aside class="side"><div class="eyebrow">TWO-FRAME ANIMATION</div><h2>ふたつの絵で、動く。</h2><p class="description">クリックするたびに、手の位置が<br>交互に切り替わります。</p><button class="primary" id="pat">頭を撫でる</button>
+<div class="group"><span class="group-label">表情</span><div class="choices" aria-label="表情を選ぶ"><button data-face="neutral" aria-pressed="true">ふつう</button><button data-face="smile" aria-pressed="false">笑顔</button><button data-face="relaxed" aria-pressed="false">目を閉じる</button></div></div>
+<div class="group"><span class="group-label">現在のコマ</span><div class="counter"><span id="frame-0" class="frame active">01</span><span class="arrow">⇄</span><span id="frame-1" class="frame">02</span></div><span class="hint" id="count" aria-live="polite">0 回クリック</span></div>
+<button class="reset" id="reset">最初に戻す</button><p class="hint">絵またはボタンを選択すると、<br>Enter / Space でも操作できます。</p></aside></main>
+<footer><span>余白の部屋 / 白黒イラスト試作</span><span>01 CHARACTER · 02 FRAMES · 03 EXPRESSIONS</span></footer></div>
+<script>
+'use strict';
+const state={frame:0,count:0,face:'neutral'};
+const lines={neutral:'少し、休憩していこう。',smile:'ふふ。ありがとう。',relaxed:'……のんびりできるね。'};
+function render(){
+ for(let i=0;i<2;i++){
+  document.getElementById('hand-'+i).classList.toggle('visible',state.frame===i);
+  document.getElementById('frame-'+i).classList.toggle('active',state.frame===i);
+ }
+ for(const key of Object.keys(lines))document.getElementById('face-'+key).classList.toggle('visible',state.face===key);
+ document.querySelectorAll('[data-face]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.face===state.face)));
+ document.getElementById('count').textContent=state.count+' 回クリック';
+ document.getElementById('line').textContent=lines[state.face];
+}
+function pat(){state.frame=1-state.frame;state.count++;render();}
+document.getElementById('art').addEventListener('click',pat);
+document.getElementById('pat').addEventListener('click',pat);
+document.querySelectorAll('[data-face]').forEach(button=>button.addEventListener('click',()=>{state.face=button.dataset.face;render();}));
+document.getElementById('reset').addEventListener('click',()=>{Object.assign(state,{frame:0,count:0,face:'neutral'});render();});
+</script>
+</html>
