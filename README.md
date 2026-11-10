@@ -21,3 +21,9 @@ assets/natsuki/hand-transparent-v2.png: 袖なしの手。
 assets/natsuki/poke-transparent.png: 頬をつつく人差し指。
 
 内蔵画像生成を使用。指の生成指定は「横向きに人差し指を伸ばした自然な右手、袖なし、簡潔な白黒線画、最小限の薄い影、背景は透過」。
+
+## 手の簡略版
+
+内蔵画像編集ツールで作成。使用素材: `assets/natsuki/hand-flat.png`（頭・肩）、`assets/natsuki/poke-flat.png`（頬）。
+
+編集指示: 元のシルエット・ポーズ・向き・余白を維持し、参考画像のような薄いグレーのベタ塗りと細い輪郭線へ変更。指の境目以外の線、爪、関節のしわ、手の甲の筋、陰影、質感を除去。袖なし、透過背景。

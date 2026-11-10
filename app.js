@@ -3,7 +3,7 @@
  const $=id=>document.getElementById(id),G=NatsukiGame;
  let state=G.initial(),generation=0,strokeTimer,bubbleTimer;
  const hand=$('hand');
- const sources={head:'assets/natsuki/hand-transparent-v2.png',cheek:'assets/natsuki/poke-transparent.png',shoulder:'assets/natsuki/hand-transparent-v2.png'};
+ const sources={head:'assets/natsuki/hand-flat.png',cheek:'assets/natsuki/poke-flat.png',shoulder:'assets/natsuki/hand-flat.png'};
  const ready={};for(const src of new Set(Object.values(sources))){const image=new Image();image.src=src;ready[src]=image.decode().then(()=>true,()=>false);}
  function render(){ $('score').textContent=state.affection+' / 100';$('meter').value=state.affection;$('relationship').textContent=''; }
  function say(line,part='head'){clearTimeout(bubbleTimer);$('line').textContent=line;$('bubble').dataset.part=part;$('bubble').classList.remove('faded');bubbleTimer=setTimeout(()=>$('bubble').classList.add('faded'),3200);}
