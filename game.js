@@ -8,6 +8,7 @@ const NatsukiGame=(()=>{
   const next={...state,strokes:state.strokes+1,counts};
   return {state:next,part,line:lines[part][(counts[part]-1)%lines[part].length],frame:counts[part]%2?'1':'2'};
  }
- return {initial,tap};
+ const reaction=(part,index)=>lines[part]?.[index%lines[part].length];
+ return {initial,tap,reaction};
 })();
 if(typeof module!=='undefined')module.exports=NatsukiGame;
