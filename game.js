@@ -1,10 +1,12 @@
 'use strict';
 const NatsukiGame=(()=>{
- const initial=()=>({affection:0,strokes:0});
- function tap(state){
-  const next={...state,strokes:state.strokes+1};
-  const lines=['わっ。','ふふっ。','……ありがと。','髪、くしゃくしゃだよ。'];
-  return {state:next,line:lines[(next.strokes-1)%lines.length],face:'smile',pat:true};
+ const lines={head:['わっ。','ふふっ。','……ありがと。','髪、くしゃくしゃだよ。'],cheek:['なに？','ほっぺに何かついてる？','もう、つつかないの。','ふふ、変なの。'],shoulder:['呼んだ？','どうしたの？','はいはい、聞いてるよ。','あ、びっくりした。']};
+ const initial=()=>({affection:0,strokes:0,counts:{head:0,cheek:0,shoulder:0}});
+ function tap(state,part='head'){
+  if(!Object.hasOwn(lines,part))return {state};
+  const counts={...state.counts,[part]:state.counts[part]+1};
+  const next={...state,strokes:state.strokes+1,counts};
+  return {state:next,part,line:lines[part][(counts[part]-1)%lines[part].length],frame:counts[part]%2?'1':'2'};
  }
  return {initial,tap};
 })();
