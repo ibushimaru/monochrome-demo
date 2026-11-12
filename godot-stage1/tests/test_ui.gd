@@ -6,7 +6,7 @@ class TestGame extends "res://scripts/main.gd":
 	var saved: Dictionary = {}
 	var preferences_saved: Dictionary = {}
 	func save_preferences() -> void:
-		preferences_saved={"volume":ambient_volume,"muted":ambient_muted,"motion":reduce_motion}
+		preferences_saved={"volume":ambient_volume,"muted":ambient_muted,"motion":reduce_motion,"card_pinned":card_pinned}
 	func save_game() -> void:
 		saves += 1
 		saved = state.snapshot()
@@ -46,6 +46,17 @@ func run() -> void:
 	game.size=Vector2(960,1000)
 	root.add_child(game)
 	await settle()
+	check(not game.name_label.visible,"Top-left scene description is hidden")
+	var original_pin=game.card_pinned
+	var original_phase=game.state.phase
+	game.set_card_pinned(false)
+	game.card_toggle.pressed.emit()
+	check(game.student_card.visible and game.preferences_saved.card_pinned,"Inventory pins card and saves preference")
+	check(game.student_card.position==Vector2(14,84),"Card sits at top left")
+	game.student_card.get_child(game.student_card.get_child_count()-1).pressed.emit()
+	check(not game.student_card.visible and not game.preferences_saved.card_pinned,"Card can be stored again")
+	check(game.state.phase==original_phase,"Inventory leaves story progress unchanged")
+	game.set_card_pinned(original_pin)
 	check(game.wallet.visible and not game.busy, "Opening allows pass interaction")
 	check(not game.backdrop.is_processing(), "Train background remains static")
 	check(game.ambient_player.stream.loop and is_equal_approx(game.ambient_player.stream.get_length(),48.0), "Recorded train ambience loops a full 48-second stream")

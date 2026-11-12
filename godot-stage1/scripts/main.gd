@@ -29,6 +29,11 @@ var choices: VBoxContainer
 var wallet: Button
 var resume_button: Button
 var reset_dialog: ConfirmationDialog
+var game_menu: AcceptDialog
+var inventory: AcceptDialog
+var student_card: Panel
+var card_toggle: Button
+var card_pinned: bool = false
 var settings: AcceptDialog
 var ending: PanelContainer
 var busy: bool = false
@@ -78,6 +83,7 @@ func _ready() -> void:
 	theme.set_color("font_pressed_color","Button",Color("30372f"))
 	var preferences = ConfigFile.new()
 	if preferences.load(SETTINGS_PATH)==OK:
+		card_pinned=bool(preferences.get_value("display","card_pinned",false))
 		reduce_motion=bool(preferences.get_value("display","reduce_motion",false))
 		ambient_volume=clampf(float(preferences.get_value("audio","train_volume",0.45)),0,1)
 		ambient_muted=bool(preferences.get_value("audio","train_muted",false))
@@ -125,6 +131,7 @@ func build() -> void:
 	add_child(shell)
 	name_label=label("夕方の電車",25)
 	shell.add_child(name_label)
+	name_label.hide()
 	relationship=label("初対面",15)
 	shell.add_child(relationship)
 	meter=ProgressBar.new()
@@ -132,11 +139,11 @@ func build() -> void:
 	meter.add_theme_stylebox_override("background",box(Color("e0e4dd"),Color.TRANSPARENT,4))
 	meter.add_theme_stylebox_override("fill",box(Color("6b7b63"),Color.TRANSPARENT,4))
 	shell.add_child(meter)
-	var menu=button("設定",func(): settings.popup_centered(Vector2i(mini(440,int(size.x)-24),400)))
+	var menu=button("メニュー",func(): game_menu.popup_centered(Vector2i(360,260)))
 	menu.name="SettingsButton"
 	shell.add_child(menu)
 	resume_button=button("続きから",resume_game)
-	shell.add_child(resume_button)
+
 	stage=Control.new()
 	stage.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	stage.clip_contents=true
@@ -275,9 +282,75 @@ func build() -> void:
 	settings_box.add_child(button("最初から始める",func(): settings.hide();confirm_restart()))
 	settings.add_child(settings_box)
 	add_child(settings)
-	for dialog_button in [settings.get_ok_button(),reset_dialog.get_ok_button(),reset_dialog.get_cancel_button()]:
+	build_menu()
+	for dialog_button in [game_menu.get_ok_button(),inventory.get_ok_button(),settings.get_ok_button(),reset_dialog.get_ok_button(),reset_dialog.get_cancel_button()]:
 		for color_name in ["font_color","font_hover_color","font_pressed_color","font_focus_color"]:
 			dialog_button.add_theme_color_override(color_name,Color("30372f"))
+
+func build_menu() -> void:
+	game_menu=AcceptDialog.new()
+	game_menu.title="メニュー"
+	game_menu.ok_button_text="戻る"
+	var menu_items=VBoxContainer.new()
+	menu_items.add_theme_constant_override("separation",12)
+	menu_items.add_child(resume_button)
+	menu_items.add_child(button("所持品",func():game_menu.hide();inventory.popup_centered(Vector2i(360,220))))
+	menu_items.add_child(button("設定",func():game_menu.hide();settings.popup_centered(Vector2i(440,400))))
+	game_menu.add_child(menu_items)
+	add_child(game_menu)
+	inventory=AcceptDialog.new()
+	inventory.title="所持品"
+	inventory.ok_button_text="戻る"
+	inventory.confirmed.connect(func():game_menu.popup_centered(Vector2i(360,260)))
+	var items=VBoxContainer.new()
+	items.add_theme_constant_override("separation",16)
+	var item_name=label("学生証",22)
+	item_name.add_theme_color_override("font_color",Color.WHITE)
+	items.add_child(item_name)
+	card_toggle=button("",func():set_card_pinned(not card_pinned);inventory.hide())
+	items.add_child(card_toggle)
+	inventory.add_child(items)
+	add_child(inventory)
+	student_card=Panel.new()
+	student_card.add_theme_stylebox_override("panel",box(Color("f7f5ee"),Color("686c64"),8))
+	student_card.z_index=10
+	shell.add_child(student_card)
+	var title=label("学生証",18)
+	title.position=Vector2(14,10)
+	student_card.add_child(title)
+	var photo=TextureRect.new()
+	photo.texture=atlas(FACES.calm,Rect2(.27,.02,.46,.24))
+	photo.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
+	photo.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	photo.position=Vector2(14,44)
+	photo.size=Vector2(64,86)
+	student_card.add_child(photo)
+	var details=label("日向 夏希\n大学生",16)
+	details.position=Vector2(92,55)
+	student_card.add_child(details)
+	var store_card=button("×",func():set_card_pinned(false))
+	for style_name in ["normal","hover","pressed","focus"]:
+		var compact=box(Color("f7f5ee"),Color("b5bcb1"),5)
+		compact.content_margin_left=3
+		compact.content_margin_right=3
+		compact.content_margin_top=0
+		compact.content_margin_bottom=0
+		store_card.add_theme_stylebox_override(style_name,compact)
+	store_card.custom_minimum_size=Vector2(28,28)
+	store_card.position=Vector2(190,8)
+	store_card.size=Vector2(28,28)
+	store_card.tooltip_text="所持品にしまう"
+	student_card.add_child(store_card)
+	refresh_card()
+
+func refresh_card() -> void:
+	student_card.visible=card_pinned
+	card_toggle.text="左上からしまう" if card_pinned else "左上に配置する"
+
+func set_card_pinned(pinned: bool) -> void:
+	card_pinned=pinned
+	refresh_card()
+	save_preferences()
 
 func layout() -> void:
 	if not is_instance_valid(shell): return
@@ -287,14 +360,13 @@ func layout() -> void:
 	shell.size=Vector2(w,h)
 	name_label.position=Vector2(16,20)
 	name_label.add_theme_font_size_override("font_size",19 if w<500 else 25)
-	relationship.position=Vector2(w-228,20)
-	meter.position=Vector2(w-228,49)
+	relationship.position=Vector2(w-258,20)
+	meter.position=Vector2(w-258,49)
 	meter.size=Vector2(130,6)
-	shell.get_node("SettingsButton").position=Vector2(w-84,14)
-	shell.get_node("SettingsButton").size=Vector2(64,44)
-	resume_button.position=Vector2(24,72)
-	resume_button.size=Vector2(140,48)
-	resume_button.z_index=8
+	shell.get_node("SettingsButton").position=Vector2(w-114,14)
+	shell.get_node("SettingsButton").size=Vector2(104,44)
+	student_card.position=Vector2(14,84)
+	student_card.size=Vector2(230,148)
 	var sh: float = maxf(200,h-402)
 	stage.position=Vector2(0,75)
 	stage.size=Vector2(w,sh)
@@ -361,6 +433,7 @@ func update_ambience() -> void:
 
 func save_preferences() -> void:
 	var preferences=ConfigFile.new()
+	preferences.set_value("display","card_pinned",card_pinned)
 	preferences.set_value("display","reduce_motion",reduce_motion)
 	preferences.set_value("audio","train_volume",ambient_volume)
 	preferences.set_value("audio","train_muted",ambient_muted)
@@ -576,6 +649,7 @@ func resume_game() -> void:
 	var data=read_save()
 	if state.restore(data):
 		resume_button.hide()
+		game_menu.hide()
 		show_scene(false)
 
 func new_game() -> void:
