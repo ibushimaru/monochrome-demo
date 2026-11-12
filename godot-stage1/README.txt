@@ -1,6 +1,7 @@
 夏希と、最初の約束。 — Windows / Godot Stage 1
 
-開発対象は Windows x86_64。Godot 4.6.2 / GL Compatibility。
+主な配布対象は Windows x86_64。Macでも同じプロジェクトを制作・試遊できる。
+Godot 4.6.2 / GL Compatibility。MacアプリはApple Silicon・Intel両対応。
 ゲーム本体はこの Godot プロジェクトだけを更新する。
 旧ブラウザ専用デモと stage1/ の Web 出力は過去の版として残し、今後は更新しない。
 ブラウザのイベント設計ツールはゲーム本体とは別の設計用ツール。
@@ -35,6 +36,10 @@ Windows の保存先は通常 %APPDATA%/Godot/app_userdata/夏希と、最初の
 Windows 出力:
   godot --headless --path godot-stage1 --editor --import --quit
   godot --headless --path godot-stage1 --export-release Windows ../builds/windows/NatsukiStage1.exe
+
+Mac 出力（同じプロジェクト）:
+  godot --headless --path godot-stage1 --export-release macOS ../builds/macos/NatsukiStage1.zip
+Mac の保存先は通常 ~/Library/Application Support/Godot/app_userdata/夏希と、最初の約束。/
 
 Godot ライセンスと第三者表示: GODOT-LICENSES.txt
 Noto Sans JP: assets/OFL.txt。Medium は可変フォントから wght=450 を固定。
