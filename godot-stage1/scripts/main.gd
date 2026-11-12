@@ -302,10 +302,6 @@ func perform(action: String) -> void:
 	resume_button.hide()
 	quiet_timer=0
 	show_scene()
-	if action in ["greet","quiet","introduce","nod","return_greet"] and not reduce_motion:
-		tween=create_tween()
-		tween.tween_property(portrait,"position",portrait_home+Vector2(0,5),.18)
-		tween.tween_property(portrait,"position",portrait_home,.25)
 
 func touch(part: String) -> void:
 	if state.ended(): return
@@ -429,21 +425,12 @@ func animate_touch(part: String, gesture: String) -> void:
 	tween=create_tween()
 	if gesture in ["withdraw","block","swat"]:
 		if not reduce_motion:
-			tween.tween_property(portrait,"position",portrait_home+Vector2(-22,8),.18)
-			tween.parallel().tween_property(hand,"position",hand.position+Vector2(95,80 if gesture=="swat" else 25),.25)
+			tween.tween_property(hand,"position",hand.position+Vector2(95,80 if gesture=="swat" else 25),.25)
 		tween.tween_property(hand,"modulate:a",0.0,.18)
 	else:
 		tween.tween_interval(.5)
 		tween.tween_property(hand,"modulate:a",0.0,.2)
 	tween.tween_callback(hand.hide)
-	tween.tween_property(portrait,"position",portrait_home,.4)
-	if gesture=="swat":
-		tween.tween_interval(1.6)
-		if not reduce_motion:
-			tween.tween_property(portrait,"position",portrait_home+Vector2(-portrait.size.x,0),.6)
-			tween.parallel().tween_property(portrait,"modulate:a",0.0,.6)
-		else:
-			tween.tween_property(portrait,"modulate:a",0.0,.2)
 
 func show_ending() -> void:
 	if state.phase=="rejected":portrait.modulate.a=0
@@ -476,7 +463,7 @@ func _process(delta: float) -> void:
 func save_game() -> void:
 	var file=FileAccess.open(SAVE_PATH+".tmp",FileAccess.WRITE)
 	if file==null:
-		save_note.text="保存できませんでした。ブラウザの保存設定を確認してください。"
+		save_note.text="保存できませんでした。保存先の空き容量・書き込み権限を確認してください。"
 		return
 	file.store_string(JSON.stringify(state.snapshot()))
 	file.close()

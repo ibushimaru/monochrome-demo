@@ -16,6 +16,16 @@ func check(ok: bool, message: String) -> void:
 	if not ok: failures.append(message)
 func settle() -> void:
 	await create_timer(5.0).timeout
+func check_stationary() -> void:
+	var speed=Engine.time_scale
+	Engine.time_scale=1
+	var timer=create_timer(.8)
+	var moved=false
+	while timer.time_left>0:
+		await process_frame
+		moved=moved or not game.portrait.position.is_equal_approx(game.portrait_home)
+	Engine.time_scale=speed
+	check(not moved,"Portrait must stay fixed during reaction: "+game.state.phase)
 func choose(index: int = 0) -> void:
 	check(game.choices.get_child_count()>index, "Choice exists at "+game.state.phase)
 	if game.choices.get_child_count()<=index:return
@@ -26,7 +36,7 @@ func _initialize() -> void:
 func run() -> void:
 	Engine.time_scale=30
 	game=TestGame.new()
-	game.size=Vector2(390,844)
+	game.size=Vector2(960,1000)
 	root.add_child(game)
 	await settle()
 	check(game.wallet.visible and not game.busy, "Opening allows pass interaction")
@@ -38,22 +48,26 @@ func run() -> void:
 	check(game.eye_overlay.texture.atlas==game.BLINK, "Blink reaches closed-eye frame")
 	game.update_blink(.2)
 	check(not game.eye_overlay.visible, "Blink restores expression")
-	game.settings.popup_centered(Vector2i(366,400))
+	game.settings.popup_centered(Vector2i(440,400))
 	await process_frame
 	await process_frame
-	check(game.settings.size.y<600, "Settings fits phone height")
+	check(game.settings.size.y<600, "Settings fits desktop window")
 	game.settings.hide()
 	game.wallet.pressed.emit()
 	await settle()
 	check(game.state.phase=="thanks" and not game.wallet.visible, "Pass triggers thanks")
 	check(game.body_top.texture.atlas==game.RECEIVE, "Receiving pose shown")
 	check(game.body_bottom.texture.atlas==game.FACES.calm, "Legs remain stable across poses")
-	for i in range(9): await choose()
+	game.choices.get_child(0).pressed.emit()
+	await check_stationary()
+	await settle()
+	for i in range(8): await choose()
 	check(game.state.phase=="promise" and game.ending.visible, "Actual choice buttons complete Stage 1")
 	check(game.saved.flags.get("stage2_unlocked",false), "Completion saved")
 	game.new_game()
 	await settle()
 	game.touch("head")
+	await check_stationary()
 	await settle()
 	check(game.state.phase=="withdraw", "Direct head target withdraws")
 	var before=game.state.caution
@@ -73,6 +87,7 @@ func run() -> void:
 	for i in range(2):
 		game.last_touch_ms=-5000
 		game.touch("head")
+		await check_stationary()
 		await settle()
 	check(game.state.phase=="rejected" and game.ending.visible, "Repeated touch visibly ends ride")
 	check(is_zero_approx(game.portrait.modulate.a), "Rejected character leaves carriage area")
@@ -91,7 +106,7 @@ func run() -> void:
 			check(game.choices.position.y+last.position.y+last.size.y<game.view_button.position.y,"Choices clear footer: "+phase)
 	game.queue_free()
 	await process_frame
-	if failures.is_empty(): print("PASS: UI route, refusal/recovery, save, retry, blink, receive pose, dialogs, all scene bubbles and choices at 390px")
+	if failures.is_empty(): print("PASS: desktop UI route, fixed portrait through reactions, save/retry, expressions, dialogs and all scene layouts at 960x1000")
 	else:
 		for failure in failures:push_error(failure)
 	quit(0 if failures.is_empty() else 1)

@@ -235,7 +235,7 @@
   "withdraw": {
     "line": "…どうしたの？",
     "face": "confused",
-    "hint": "夏希が身を引いた。手を止めて、距離を取ろう。",
+    "hint": "夏希の表情が曇った。手を止めて、距離を保とう。",
     "choices": [
       [
         "apologize",

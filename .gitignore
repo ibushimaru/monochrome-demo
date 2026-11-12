@@ -2,3 +2,4 @@ godot-stage1/.godot/
 .build-tools/
 *.DS_Store
 preview-*.jpg
+builds/
