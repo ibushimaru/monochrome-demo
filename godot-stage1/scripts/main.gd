@@ -12,6 +12,7 @@ const HALF_BLINK = preload("res://assets/full-halfblink.png")
 const GLANCE = preload("res://assets/full-glance.png")
 const HAND = preload("res://assets/hand.png")
 const POKE = preload("res://assets/poke.png")
+const TRAIN_AUDIO = preload("res://assets/train-ambience.ogg")
 const SAVE_PATH = "user://stage1-save.json"
 var state = State.new()
 var shell: Control
@@ -52,6 +53,13 @@ var eye_overlay: TextureRect
 var blink_clock: float = 0.0
 var next_blink: float = 4.0
 var blink_elapsed: float = -1.0
+var ambient_player: AudioStreamPlayer
+var ambient_volume: float = 0.45
+var ambient_muted: bool = false
+var ambient_slider: HSlider
+var ambient_toggle: CheckButton
+var ambient_caption: Label
+var audio_fade: Tween
 const SETTINGS_PATH = "user://stage1-settings.cfg"
 
 func _ready() -> void:
@@ -67,7 +75,10 @@ func _ready() -> void:
 	var preferences = ConfigFile.new()
 	if preferences.load(SETTINGS_PATH)==OK:
 		reduce_motion=bool(preferences.get_value("display","reduce_motion",false))
+		ambient_volume=clampf(float(preferences.get_value("audio","train_volume",0.45)),0,1)
+		ambient_muted=bool(preferences.get_value("audio","train_muted",false))
 	build()
+	start_ambience()
 	resized.connect(layout)
 	layout()
 	var data = read_save()
@@ -126,11 +137,10 @@ func build() -> void:
 	stage.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	stage.clip_contents=true
 	shell.add_child(stage)
-	var bg = Control.new()
+	var bg = TextureRect.new()
 	backdrop=bg
 	bg.set_script(preload("res://scripts/train_backdrop.gd"))
 	stage.add_child(bg)
-	bg.set_process(not reduce_motion)
 	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	portrait=TextureRect.new()
 	portrait.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
@@ -220,15 +230,34 @@ func build() -> void:
 	settings_box.custom_minimum_size.x=300
 	settings_box.add_theme_constant_override("separation",16)
 	var motion=CheckButton.new()
-	motion.text="揺れ・移動の演出を控える"
+	motion.text="まばたき・手の動きを控える"
 	motion.button_pressed=reduce_motion
 	motion.toggled.connect(func(on):
 		reduce_motion=on
-		backdrop.set_process(not on)
-		var preferences=ConfigFile.new()
-		preferences.set_value("display","reduce_motion",on)
-		preferences.save(SETTINGS_PATH))
+		save_preferences())
 	settings_box.add_child(motion)
+	ambient_caption=label("電車の環境音  %d%%" % roundi(ambient_volume*100),17)
+	ambient_caption.add_theme_color_override("font_color",Color("ededeb"))
+	settings_box.add_child(ambient_caption)
+	ambient_slider=HSlider.new()
+	ambient_slider.min_value=0
+	ambient_slider.max_value=100
+	ambient_slider.step=1
+	ambient_slider.value=ambient_volume*100
+	ambient_slider.custom_minimum_size=Vector2(300,28)
+	ambient_slider.value_changed.connect(func(value):
+		ambient_volume=value/100.0
+		update_ambience()
+		save_preferences())
+	settings_box.add_child(ambient_slider)
+	ambient_toggle=CheckButton.new()
+	ambient_toggle.text="環境音をミュート"
+	ambient_toggle.button_pressed=ambient_muted
+	ambient_toggle.toggled.connect(func(on):
+		ambient_muted=on
+		update_ambience()
+		save_preferences())
+	settings_box.add_child(ambient_toggle)
 	settings_box.add_child(button("最初から始める",func(): settings.hide();confirm_restart()))
 	var credits=label("第1ステージ / 夏希と、最初の約束。\nGodot Engine — MIT License\nNoto Sans JP — SIL Open Font License\nキャラクター・素材：AI生成を含む\n進行はこの端末に保存されます。",14)
 	credits.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
@@ -295,6 +324,37 @@ func layout() -> void:
 	view_button.size=Vector2(156,40)
 	ending.position=Vector2(24,sh+142)
 	ending.size=Vector2(w-48,160)
+
+func start_ambience() -> void:
+	ambient_player=AudioStreamPlayer.new()
+	var stream=TRAIN_AUDIO.duplicate() as AudioStreamOggVorbis
+	stream.loop=true
+	ambient_player.stream=stream
+	add_child(ambient_player)
+	ambient_player.volume_db=-60
+	ambient_player.play()
+	ambient_player.stream_paused=ambient_muted or ambient_volume<=0
+	audio_fade=create_tween()
+	audio_fade.tween_property(ambient_player,"volume_db",linear_to_db(maxf(ambient_volume,.001)),1.2)
+
+func update_ambience() -> void:
+	ambient_caption.text="電車の環境音  %d%%" % roundi(ambient_volume*100)
+	if not is_instance_valid(ambient_player):return
+	if audio_fade and audio_fade.is_valid():audio_fade.kill()
+	ambient_player.volume_db=linear_to_db(maxf(ambient_volume,.001))
+	ambient_player.stream_paused=ambient_muted or ambient_volume<=0
+
+func save_preferences() -> void:
+	var preferences=ConfigFile.new()
+	preferences.set_value("display","reduce_motion",reduce_motion)
+	preferences.set_value("audio","train_volume",ambient_volume)
+	preferences.set_value("audio","train_muted",ambient_muted)
+	preferences.save(SETTINGS_PATH)
+
+func _exit_tree() -> void:
+	if is_instance_valid(ambient_player):
+		ambient_player.stop()
+		ambient_player.stream=null
 
 func perform(action: String) -> void:
 	if busy: return

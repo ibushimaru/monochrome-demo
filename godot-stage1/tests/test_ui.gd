@@ -4,6 +4,9 @@ extends SceneTree
 class TestGame extends "res://scripts/main.gd":
 	var saves: int = 0
 	var saved: Dictionary = {}
+	var preferences_saved: Dictionary = {}
+	func save_preferences() -> void:
+		preferences_saved={"volume":ambient_volume,"muted":ambient_muted,"motion":reduce_motion}
 	func save_game() -> void:
 		saves += 1
 		saved = state.snapshot()
@@ -40,6 +43,16 @@ func run() -> void:
 	root.add_child(game)
 	await settle()
 	check(game.wallet.visible and not game.busy, "Opening allows pass interaction")
+	check(not game.backdrop.is_processing(), "Train background remains static")
+	check(game.ambient_player.stream.loop and is_equal_approx(game.ambient_player.stream.get_length(),32.0), "Train ambience loops a full 32-second stream")
+	game.ambient_slider.value=25
+	game.ambient_toggle.button_pressed=true
+	check(game.ambient_player.stream_paused and game.preferences_saved.muted,"Mute is applied and saved")
+	game.ambient_toggle.button_pressed=false
+	check(not game.ambient_player.stream_paused and is_equal_approx(db_to_linear(game.ambient_player.volume_db),.25),"Unmute restores selected volume")
+	game.ambient_slider.value=0
+	check(game.ambient_player.stream_paused,"Zero volume is silent")
+	game.ambient_slider.value=45
 	game.reduce_motion=false
 	game.blink_clock=10
 	game.update_blink(0.01)
@@ -106,6 +119,9 @@ func run() -> void:
 			check(game.choices.position.y+last.position.y+last.size.y<game.view_button.position.y,"Choices clear footer: "+phase)
 	game.queue_free()
 	await process_frame
+	# Let the audio mixer retire the stopped Ogg playback before engine shutdown.
+	Engine.time_scale=1
+	await create_timer(.2).timeout
 	if failures.is_empty(): print("PASS: desktop UI route, fixed portrait through reactions, save/retry, expressions, dialogs and all scene layouts at 960x1000")
 	else:
 		for failure in failures:push_error(failure)

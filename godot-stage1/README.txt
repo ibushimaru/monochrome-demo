@@ -44,4 +44,7 @@ Mac の保存先は通常 ~/Library/Application Support/Godot/app_userdata/夏�
 Godot ライセンスと第三者表示: GODOT-LICENSES.txt
 Noto Sans JP: assets/OFL.txt。Medium は可変フォントから wght=450 を固定。
 イラストには画像生成を使用。素材・プロンプトは ASSET-NOTES.txt / EXPRESSION-PROMPTS.txt。
-音声・効果音は未収録。
+電車の走行環境音を32秒ループで再生。「設定」で音量・ミュートを保存する。
+走行音は tools/make_train_ambience.py で合成したオリジナル素材（外部録音なし）。
+背景は assets/train-interior-v2.png の静止画。横スクロール・パララックスは使わない。
+キャラクターボイスは未収録。
