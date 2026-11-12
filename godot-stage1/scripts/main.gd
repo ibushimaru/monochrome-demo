@@ -1,0 +1,425 @@
+extends Control
+const State = preload("res://scripts/stage_state.gd")
+const FONT = preload("res://assets/NotoSansJP-Medium.ttf")
+const FACES = {"calm":preload("res://assets/full-calm.png"),"wary":preload("res://assets/full-wary.png"),"smile":preload("res://assets/full-smile.png")}
+const BLOCK = preload("res://assets/full-block-v2.png")
+const SWAT = preload("res://assets/full-swat.png")
+const HAND = preload("res://assets/hand.png")
+const POKE = preload("res://assets/poke.png")
+const SAVE_PATH = "user://stage1-save.json"
+var state = State.new()
+var shell: Control
+var stage: Control
+var portrait: TextureRect
+var hand: TextureRect
+var bubble: Panel
+var bubble_text: Label
+var hint: Label
+var name_label: Label
+var relationship: Label
+var meter: ProgressBar
+var choices: VBoxContainer
+var wallet: Button
+var resume_button: Button
+var reset_dialog: ConfirmationDialog
+var settings: AcceptDialog
+var ending: PanelContainer
+var busy: bool = false
+var serial: int = 0
+var tween: Tween
+var portrait_home: Vector2
+var last_touch_ms: int = -5000
+var quiet_timer: float = 0.0
+var next_idle: float = 12.0
+var idle_index: int = 0
+var reduce_motion: bool = false
+var save_note: Label
+var has_save: bool = false
+var close_view: bool = false
+var view_button: Button
+var face_overlay: TextureRect
+var last_reaction_ms: int = -6000
+var backdrop: Control
+const SETTINGS_PATH = "user://stage1-settings.cfg"
+
+func _ready() -> void:
+	var theme_resource = Theme.new()
+	theme_resource.default_font = FONT
+	theme_resource.default_font_size = 20
+	theme = theme_resource
+	for kind in ["normal","hover","pressed","focus"]:
+		theme.set_stylebox(kind,"Button",box(Color("ffffff") if kind=="normal" else Color("e4e9e0"),Color("b5bcb1"),9))
+	theme.set_color("font_color","Button",Color("30372f"))
+	theme.set_color("font_hover_color","Button",Color("30372f"))
+	theme.set_color("font_pressed_color","Button",Color("30372f"))
+	var preferences = ConfigFile.new()
+	if preferences.load(SETTINGS_PATH)==OK:
+		reduce_motion=bool(preferences.get_value("display","reduce_motion",false))
+	build()
+	resized.connect(layout)
+	layout()
+	var data = read_save()
+	has_save = not data.is_empty()
+	resume_button.visible = has_save
+	show_scene(false)
+	if has_save:
+		hint.text = "前回の続きがあります。「続きから」で再開できます。"
+
+func box(fill: Color, stroke: Color, radius: int = 12) -> StyleBoxFlat:
+	var b = StyleBoxFlat.new()
+	b.bg_color=fill
+	b.border_color=stroke
+	b.set_border_width_all(1)
+	b.set_corner_radius_all(radius)
+	b.content_margin_left=18
+	b.content_margin_right=18
+	b.content_margin_top=12
+	b.content_margin_bottom=12
+	return b
+
+func label(text: String, font_size: int = 20) -> Label:
+	var l = Label.new()
+	l.text=text
+	l.add_theme_font_size_override("font_size",font_size)
+	l.add_theme_color_override("font_color",Color("384035"))
+	return l
+
+func button(text: String, callback: Callable) -> Button:
+	var b = Button.new()
+	b.text=text
+	b.add_theme_font_size_override("font_size",18)
+	b.custom_minimum_size=Vector2(0,52)
+	b.mouse_default_cursor_shape=Control.CURSOR_POINTING_HAND
+	b.pressed.connect(callback)
+	return b
+
+func build() -> void:
+	shell = Control.new()
+	add_child(shell)
+	name_label=label("夕方の電車",25)
+	shell.add_child(name_label)
+	relationship=label("初対面",15)
+	shell.add_child(relationship)
+	meter=ProgressBar.new()
+	meter.show_percentage=false
+	meter.add_theme_stylebox_override("background",box(Color("e0e4dd"),Color.TRANSPARENT,4))
+	meter.add_theme_stylebox_override("fill",box(Color("6b7b63"),Color.TRANSPARENT,4))
+	shell.add_child(meter)
+	var menu=button("設定",func(): settings.popup_centered(Vector2i(mini(440,int(size.x)-24),400)))
+	menu.name="SettingsButton"
+	shell.add_child(menu)
+	resume_button=button("続きから",resume_game)
+	shell.add_child(resume_button)
+	stage=Control.new()
+	stage.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	stage.clip_contents=true
+	shell.add_child(stage)
+	var bg = Control.new()
+	backdrop=bg
+	bg.set_script(preload("res://scripts/train_backdrop.gd"))
+	stage.add_child(bg)
+	bg.set_process(not reduce_motion)
+	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	portrait=TextureRect.new()
+	portrait.texture=FACES.calm
+	portrait.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
+	portrait.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	portrait.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	stage.add_child(portrait)
+	face_overlay=TextureRect.new()
+	face_overlay.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
+	face_overlay.stretch_mode=TextureRect.STRETCH_SCALE
+	face_overlay.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	portrait.add_child(face_overlay)
+	for part in ["head","cheek","shoulder"]:
+		var zone = Button.new()
+		zone.name=part
+		zone.flat=true
+		zone.mouse_default_cursor_shape=Control.CURSOR_POINTING_HAND
+		zone.tooltip_text={"head":"頭に手を伸ばす","cheek":"頬に手を伸ばす","shoulder":"肩に呼びかける"}[part]
+		for style in ["normal","hover","pressed"]:
+			zone.add_theme_stylebox_override(style,StyleBoxEmpty.new())
+		zone.pressed.connect(func(): touch(part))
+		stage.add_child(zone)
+	hand=TextureRect.new()
+	hand.texture=HAND
+	hand.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
+	hand.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	hand.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	hand.hide()
+	stage.add_child(hand)
+	wallet=button("",func(): perform("pass"))
+	wallet.set_script(preload("res://scripts/wallet.gd"))
+	for style in ["normal","hover","pressed"]:
+		wallet.add_theme_stylebox_override(style,StyleBoxEmpty.new())
+	wallet.add_theme_font_size_override("font_size",40)
+	wallet.tooltip_text="落ちた定期入れを知らせる"
+	wallet.rotation=-0.15
+	stage.add_child(wallet)
+	bubble=Panel.new()
+	bubble.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	bubble.add_theme_stylebox_override("panel",box(Color("ffffff"),Color("636b60"),22))
+	bubble_text=label("……。",21)
+	bubble_text.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+	bubble_text.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+	bubble_text.vertical_alignment=VERTICAL_ALIGNMENT_TOP
+	bubble.add_child(bubble_text)
+	stage.add_child(bubble)
+	hint=label("",17)
+	hint.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+	shell.add_child(hint)
+	choices=VBoxContainer.new()
+	choices.add_theme_constant_override("separation",9)
+	shell.add_child(choices)
+	save_note=label("",12)
+	shell.add_child(save_note)
+	view_button=button("近くで見る",func():close_view=not close_view;view_button.text="全身を見る" if close_view else "近くで見る";layout())
+	shell.add_child(view_button)
+	ending=PanelContainer.new()
+	ending.add_theme_stylebox_override("panel",box(Color("f9faf6"),Color("a7b19e"),14))
+	ending.hide()
+	shell.add_child(ending)
+	reset_dialog=ConfirmationDialog.new()
+	reset_dialog.title="最初から始める"
+	reset_dialog.dialog_text="この端末の進行を上書きして、初対面から始めますか？"
+	reset_dialog.dialog_autowrap=true
+	reset_dialog.ok_button_text="最初から"
+	reset_dialog.cancel_button_text="戻る"
+	reset_dialog.confirmed.connect(new_game)
+	add_child(reset_dialog)
+	settings=AcceptDialog.new()
+	settings.title="設定"
+	settings.ok_button_text="閉じる"
+	var settings_box = VBoxContainer.new()
+	settings_box.add_theme_constant_override("separation",16)
+	var motion=CheckButton.new()
+	motion.text="揺れ・移動の演出を控える"
+	motion.button_pressed=reduce_motion
+	motion.toggled.connect(func(on):
+		reduce_motion=on
+		backdrop.set_process(not on)
+		var preferences=ConfigFile.new()
+		preferences.set_value("display","reduce_motion",on)
+		preferences.save(SETTINGS_PATH))
+	settings_box.add_child(motion)
+	settings_box.add_child(button("最初から始める",func(): settings.hide();reset_dialog.popup_centered(Vector2i(500,200))))
+	var credits=label("第1ステージ / 夏希と、最初の約束。\nGodot Engine — MIT License\nNoto Sans JP — SIL Open Font License\nキャラクター・素材：AI生成を含む\n進行はこの端末に保存されます。",14)
+	credits.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+	settings_box.add_child(credits)
+	settings.add_child(settings_box)
+	add_child(settings)
+
+func layout() -> void:
+	if not is_instance_valid(shell): return
+	var w: float = minf(size.x,820)
+	var h: float = size.y
+	shell.position=Vector2((size.x-w)/2,0)
+	shell.size=Vector2(w,h)
+	name_label.position=Vector2(16,20)
+	name_label.add_theme_font_size_override("font_size",19 if w<500 else 25)
+	relationship.position=Vector2(w-228,20)
+	meter.position=Vector2(w-228,49)
+	meter.size=Vector2(130,6)
+	shell.get_node("SettingsButton").position=Vector2(w-84,14)
+	shell.get_node("SettingsButton").size=Vector2(64,44)
+	resume_button.position=Vector2(24,72)
+	resume_button.size=Vector2(140,48)
+	resume_button.z_index=8
+	var sh: float = maxf(200,h-402)
+	stage.position=Vector2(0,75)
+	stage.size=Vector2(w,sh)
+	var ph: float = (sh-12)*(1.8 if close_view else 1.0)
+	var pw: float = ph*0.5
+	portrait.size=Vector2(pw,ph)
+	portrait_home=Vector2((w-pw)/2-((44 if close_view else 22) if w<500 else 0),0)
+	portrait.position=portrait_home
+	face_overlay.position=Vector2(pw*.32,ph*.085)
+	face_overlay.size=Vector2(pw*.33,ph*.10)
+	var zones={"head":Rect2(.32,.025,.32,.075),"cheek":Rect2(.36,.10,.28,.075),"shoulder":Rect2(.22,.20,.55,.075)}
+	for part in zones:
+		var rect: Rect2 = zones[part]
+		var zone: Control = stage.get_node(part)
+		zone.position=portrait_home+rect.position*portrait.size
+		zone.size=rect.size*portrait.size
+	var bubble_width: float = 164 if w<500 else 235
+	bubble_text.add_theme_font_size_override("font_size",17 if w<500 else 21)
+	bubble.position=Vector2(minf(w-bubble_width-8,portrait_home.x+pw*.80),ph*.10)
+	bubble.size=Vector2(bubble_width,0)
+	fit_bubble()
+	wallet.position=Vector2(maxf(24,(w-pw)/2-20),sh-65)
+	wallet.size=Vector2(85,60)
+	hint.position=Vector2(24,sh+90)
+	hint.size=Vector2(w-48,60)
+	choices.position=Vector2(24,sh+155)
+	choices.size=Vector2(w-48,170)
+	save_note.position=Vector2(24,h-25)
+	view_button.position=Vector2(w-180,h-56)
+	view_button.size=Vector2(156,40)
+	ending.position=Vector2(24,sh+142)
+	ending.size=Vector2(w-48,160)
+
+func perform(action: String) -> void:
+	if busy: return
+	if not state.act(action): return
+	resume_button.hide()
+	quiet_timer=0
+	show_scene()
+
+func touch(part: String) -> void:
+	if state.ended(): return
+	var now: int = Time.get_ticks_msec()
+	if now-last_touch_ms<900: return
+	if busy and not state.phase in ["withdraw","block","recover"]: return
+	last_touch_ms=now
+	var previous: String = state.phase
+	if not state.act(part): return
+	if part=="shoulder" and state.phase==previous:
+		resume_button.hide()
+		save_game()
+		animate_touch(part,state.last_gesture)
+		if now-last_reaction_ms>6500:
+			last_reaction_ms=now
+			bubble_text.text="聞こえてるよ。" if state.caution>0 else "どうしたの？"
+			bubble.modulate.a=1
+		return
+	resume_button.hide()
+	quiet_timer=0
+	show_scene()
+	animate_touch(part,state.last_gesture)
+
+func show_scene(write: bool = true) -> void:
+	if tween and tween.is_valid():tween.kill()
+	portrait.position=portrait_home
+	hand.hide()
+	serial+=1
+	var ticket: int = serial
+	busy=true
+	var scene: Dictionary=state.scene()
+	portrait.texture=SWAT if state.phase=="rejected" else BLOCK if state.phase=="block" else FACES.calm
+	face_overlay.visible=state.phase not in ["block","rejected"]
+	var face_atlas=AtlasTexture.new()
+	var face_source: Texture2D=FACES.get(scene.face,FACES.calm)
+	face_atlas.atlas=face_source
+	face_atlas.region=Rect2(face_source.get_width()*.32,face_source.get_height()*.085,face_source.get_width()*.33,face_source.get_height()*.10)
+	face_overlay.texture=face_atlas
+	portrait.modulate=Color.WHITE
+	name_label.text="日向 夏希" if state.flags.get("name",false) else "夕方の電車"
+	relationship.text=("次の約束" if state.phase=="promise" else "打ち解けてきた" if state.trust>=45 else "顔見知り" if state.trust>=15 else "初対面")+"  "+str(state.trust)
+	meter.value=state.trust
+	hint.text=scene.hint
+	wallet.visible=state.phase in ["intro","noticed"]
+	for child in choices.get_children():
+		child.queue_free()
+	ending.hide()
+	bubble.modulate.a=0
+	bubble_text.text=scene.line
+	bubble_text.visible_characters=-1
+	fit_bubble()
+	if write: save_game()
+	await get_tree().create_timer(0.55).timeout
+	if ticket!=serial:return
+	create_tween().tween_property(bubble,"modulate:a",1.0,.2)
+	# The line stays intact; clicks never advance a typewriter or interrupt it.
+	await get_tree().create_timer(maxf(1.6,scene.line.length()*.055) if state.phase!="recover" else 3.0).timeout
+	if ticket!=serial:return
+	busy=false
+	if state.ended():
+		show_ending()
+	else:
+		for option in scene.get("choices",[]):
+			var action: String=option[0]
+			choices.add_child(button(option[1],func():perform(action)))
+
+func fit_bubble() -> void:
+	var font_size: int=bubble_text.get_theme_font_size("font_size")
+	var text_width: float=bubble.size.x-28
+	var text_height: float=FONT.get_multiline_string_size(bubble_text.text,HORIZONTAL_ALIGNMENT_CENTER,text_width,font_size).y
+	bubble.size.y=maxf(48,text_height+24)
+	bubble_text.position=Vector2(14,12)
+	bubble_text.size=Vector2(text_width,bubble.size.y-24)
+
+func animate_touch(part: String, gesture: String) -> void:
+	if tween and tween.is_valid():tween.kill()
+	portrait.position=portrait_home
+	hand.texture=POKE if part=="cheek" else HAND
+	hand.size=Vector2(portrait.size.x*.28,portrait.size.x*.12)
+	hand.position=portrait_home+portrait.size*Vector2(.50,.04 if part=="head" else .12 if part=="cheek" else .22)
+	hand.modulate=Color.WHITE
+	hand.show()
+	tween=create_tween()
+	if gesture in ["withdraw","block","swat"]:
+		if not reduce_motion:
+			tween.tween_property(portrait,"position",portrait_home+Vector2(-22,8),.18)
+			tween.parallel().tween_property(hand,"position",hand.position+Vector2(95,80 if gesture=="swat" else 25),.25)
+		tween.tween_property(hand,"modulate:a",0.0,.18)
+	else:
+		tween.tween_interval(.5)
+		tween.tween_property(hand,"modulate:a",0.0,.2)
+	tween.tween_callback(hand.hide)
+	tween.tween_property(portrait,"position",portrait_home,.4)
+	if gesture=="swat":
+		tween.tween_interval(1.6)
+		if not reduce_motion:
+			tween.tween_property(portrait,"position",portrait_home+Vector2(-portrait.size.x,0),.6)
+			tween.parallel().tween_property(portrait,"modulate:a",0.0,.6)
+		else:
+			tween.tween_property(portrait,"modulate:a",0.0,.2)
+
+func show_ending() -> void:
+	if state.phase=="rejected":portrait.modulate.a=0
+	for child in ending.get_children():child.queue_free()
+	var content=VBoxContainer.new()
+	content.add_theme_constant_override("separation",10)
+	var title=label("次の約束ができた。" if state.phase=="promise" else "今日の乗車を終えた。",24)
+	content.add_child(title)
+	if state.phase=="promise":
+		var detail=label("第1ステージ完了。第2ステージへ進む約束を保存しました。",15)
+		detail.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+		content.add_child(detail)
+		content.add_child(button("もう一度、初対面から",func():reset_dialog.popup_centered(Vector2i(500,200))))
+	else:
+		content.add_child(button("後日、同じ電車に乗る",func():perform("new_ride")))
+	ending.add_child(content)
+	ending.show()
+
+func _process(delta: float) -> void:
+	if busy or state.ended():return
+	quiet_timer+=delta
+	if quiet_timer>next_idle:
+		quiet_timer=0
+		next_idle=18
+		idle_index+=1
+		if state.phase in ["intro","noticed"]:
+			hint.text="足元の定期入れをタップすると、持ち主に知らせられる。"
+
+func save_game() -> void:
+	var file=FileAccess.open(SAVE_PATH+".tmp",FileAccess.WRITE)
+	if file==null:
+		save_note.text="保存できませんでした。ブラウザの保存設定を確認してください。"
+		return
+	file.store_string(JSON.stringify(state.snapshot()))
+	file.close()
+	var error=DirAccess.rename_absolute(SAVE_PATH+".tmp",SAVE_PATH)
+	save_note.text="この端末に保存済み" if error==OK else "保存に失敗しました"
+
+func read_save() -> Dictionary:
+	if not FileAccess.file_exists(SAVE_PATH):return {}
+	var parsed=JSON.parse_string(FileAccess.get_file_as_string(SAVE_PATH))
+	if not parsed is Dictionary:return {}
+	var test=State.new()
+	return parsed if test.restore(parsed) else {}
+
+func resume_game() -> void:
+	var data=read_save()
+	if state.restore(data):
+		resume_button.hide()
+		show_scene(false)
+
+func new_game() -> void:
+	serial+=1
+	if tween and tween.is_valid():tween.kill()
+	hand.hide()
+	state=State.new()
+	resume_button.hide()
+	portrait.position=portrait_home
+	show_scene()

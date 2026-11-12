@@ -1,0 +1,8 @@
+全身立ち絵 / 2026-11-12
+Built-in image_gen（CLI/API fallback は未使用）
+full-calm.png を基本とし、表情差分は顔領域だけを重ねて体の揺れを防ぐ。
+full-block-v2.png は腕の長さを修正した遮るポーズ。
+full-swat.png は手を払って離れるポーズ。
+
+full-block-v2.png の最終編集プロンプト:
+Use case: precise-object-edit. Edit this fully clothed monochrome full-body character sprite, an adult 20-year-old university student. Correct ONLY the anatomical proportions of the raised arm on viewer right and its open hand. Keep identical face, short bob hair, eye highlights, hairpin, outfit, torso, other arm, legs, shoes, framing and scale. The current elbow-to-wrist forearm is unnaturally short. Place elbow naturally beside waist, lengthen forearm to roughly 80-85 percent of shoulder-to-elbow length, with wrist naturally reaching upper chest and open palm at collarbone level. Open hand in a gentle stop gesture, fingers point upward with slight natural bends. Correct finger phalanx lengths: proximal longest, middle shorter, distal shortest, little finger reaches upper joint of ring finger. Small simple hand appropriate for this adult's body, palm comparable in length to middle finger. Minimal lines: outline and only lines separating fingers, no nails, no palm creases, no photoreal texture, flat gray and white. Do not enlarge head or hand. Preserve full body including feet with margins. Transparent background, remove stray opaque white debris outside silhouette. Single figure, no text.
