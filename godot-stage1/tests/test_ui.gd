@@ -26,6 +26,7 @@ func _initialize() -> void:
 func run() -> void:
 	Engine.time_scale=30
 	game=TestGame.new()
+	game.size=Vector2(390,844)
 	root.add_child(game)
 	await settle()
 	check(game.wallet.visible and not game.busy, "Opening allows pass interaction")
@@ -79,9 +80,18 @@ func run() -> void:
 	await settle()
 	check(game.state.phase=="return_wary", "Ending button starts later ride")
 	check(game.portrait.position.is_equal_approx(game.portrait_home) and is_equal_approx(game.portrait.modulate.a,1.0), "Later ride resets departure animation")
+	for phase in game.State.STORY.data:
+		game.state.phase=phase
+		game.show_scene(false)
+		await settle()
+		var line_height=game.FONT.get_height(game.bubble_text.get_theme_font_size("font_size"))
+		check(game.bubble_text.get_line_count()*line_height+24<=game.bubble.size.y+1,"Bubble contains all lines: "+phase)
+		if game.choices.get_child_count()>0:
+			var last=game.choices.get_child(game.choices.get_child_count()-1)
+			check(game.choices.position.y+last.position.y+last.size.y<game.view_button.position.y,"Choices clear footer: "+phase)
 	game.queue_free()
 	await process_frame
-	if failures.is_empty(): print("PASS: UI buttons, pacing, ending, direct targets, refusal recovery, shoulder save, later ride")
+	if failures.is_empty(): print("PASS: UI route, refusal/recovery, save, retry, blink, receive pose, dialogs, all scene bubbles and choices at 390px")
 	else:
 		for failure in failures:push_error(failure)
 	quit(0 if failures.is_empty() else 1)

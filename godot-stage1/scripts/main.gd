@@ -378,7 +378,8 @@ func show_scene(write: bool = true) -> void:
 func fit_bubble() -> void:
 	var font_size: int=bubble_text.get_theme_font_size("font_size")
 	var text_width: float=bubble.size.x-28
-	var text_height: float=FONT.get_multiline_string_size(bubble_text.text,HORIZONTAL_ALIGNMENT_CENTER,text_width,font_size).y
+	bubble_text.size.x=text_width
+	var text_height: float=FONT.get_height(font_size)*maxi(1,bubble_text.get_line_count())
 	bubble.size.y=maxf(48,text_height+24)
 	bubble_text.position=Vector2(14,12)
 	bubble_text.size=Vector2(text_width,bubble.size.y-24)

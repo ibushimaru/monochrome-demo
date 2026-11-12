@@ -27,4 +27,6 @@ stage1/ を HTTP(S) で配信。file:// では起動しない。
 Godot ランタイムのライセンスと第三者表示: GODOT-LICENSES.txt
 Noto Sans JP: assets/OFL.txt。配布する Medium は可変フォントから wght=450 を固定したもの。
 イラストには画像生成を使用。未使用の旧候補は配信対象から除外。
+全身の脚は固定し、表情・腕を別領域で切替。半目・閉じ目のまばたき、受け取り、遮る、払う、会釈、駅表示への視線を実装。
+画像の編集プロンプト: ASSET-NOTES.txt / EXPRESSION-PROMPTS.txt
 音声・効果音はこのステージには未収録。
