@@ -29,9 +29,24 @@ func run() -> void:
 	root.add_child(game)
 	await settle()
 	check(game.wallet.visible and not game.busy, "Opening allows pass interaction")
+	game.reduce_motion=false
+	game.blink_clock=10
+	game.update_blink(0.01)
+	check(game.eye_overlay.visible, "Idle starts a blink")
+	game.update_blink(.1)
+	check(game.eye_overlay.texture.atlas==game.BLINK, "Blink reaches closed-eye frame")
+	game.update_blink(.2)
+	check(not game.eye_overlay.visible, "Blink restores expression")
+	game.settings.popup_centered(Vector2i(366,400))
+	await process_frame
+	await process_frame
+	check(game.settings.size.y<600, "Settings fits phone height")
+	game.settings.hide()
 	game.wallet.pressed.emit()
 	await settle()
 	check(game.state.phase=="thanks" and not game.wallet.visible, "Pass triggers thanks")
+	check(game.body_top.texture.atlas==game.RECEIVE, "Receiving pose shown")
+	check(game.body_bottom.texture.atlas==game.FACES.calm, "Legs remain stable across poses")
 	for i in range(9): await choose()
 	check(game.state.phase=="promise" and game.ending.visible, "Actual choice buttons complete Stage 1")
 	check(game.saved.flags.get("stage2_unlocked",false), "Completion saved")

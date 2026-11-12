@@ -7,13 +7,13 @@
   },
   "noticed": {
     "line": "……え？",
-    "face": "wary",
+    "face": "surprise",
     "hint": "こちらに気づいた。足元の定期入れを知らせよう。",
     "choices": []
   },
   "thanks": {
     "line": "あ、私のだ。\nありがとう！",
-    "face": "smile",
+    "face": "surprise",
     "hint": "定期入れを受け取り、少し表情が緩んだ。",
     "choices": [
       [
@@ -92,7 +92,7 @@
   },
   "reply_reserved": {
     "line": "あ、ごめん。\n急に聞かれても困るよね。",
-    "face": "wary",
+    "face": "confused",
     "hint": "急いで答える必要はなさそうだ。",
     "choices": [
       [
@@ -156,7 +156,7 @@
   },
   "interrupted": {
     "line": "……あ、うん。\n今、何の話してたっけ。",
-    "face": "wary",
+    "face": "confused",
     "hint": "少し会話が途切れた。相手の言葉を待とう。",
     "choices": [
       [
@@ -234,7 +234,7 @@
   },
   "withdraw": {
     "line": "……どうしたの？",
-    "face": "wary",
+    "face": "confused",
     "hint": "夏希が身を引いた。手を止めて、距離を取ろう。",
     "choices": [
       [

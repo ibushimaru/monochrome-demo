@@ -4,6 +4,12 @@ const FONT = preload("res://assets/NotoSansJP-Medium.ttf")
 const FACES = {"calm":preload("res://assets/full-calm.png"),"wary":preload("res://assets/full-wary.png"),"smile":preload("res://assets/full-smile.png")}
 const BLOCK = preload("res://assets/full-block-v2.png")
 const SWAT = preload("res://assets/full-swat.png")
+const RECEIVE = preload("res://assets/full-receive.png")
+const SURPRISE = preload("res://assets/full-surprise.png")
+const CONFUSED = preload("res://assets/full-confused.png")
+const BLINK = preload("res://assets/full-blink.png")
+const HALF_BLINK = preload("res://assets/full-halfblink.png")
+const GLANCE = preload("res://assets/full-glance.png")
 const HAND = preload("res://assets/hand.png")
 const POKE = preload("res://assets/poke.png")
 const SAVE_PATH = "user://stage1-save.json"
@@ -40,6 +46,12 @@ var view_button: Button
 var face_overlay: TextureRect
 var last_reaction_ms: int = -6000
 var backdrop: Control
+var body_top: TextureRect
+var body_bottom: TextureRect
+var eye_overlay: TextureRect
+var blink_clock: float = 0.0
+var next_blink: float = 4.0
+var blink_elapsed: float = -1.0
 const SETTINGS_PATH = "user://stage1-settings.cfg"
 
 func _ready() -> void:
@@ -121,16 +133,30 @@ func build() -> void:
 	bg.set_process(not reduce_motion)
 	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	portrait=TextureRect.new()
-	portrait.texture=FACES.calm
 	portrait.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
 	portrait.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	portrait.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	stage.add_child(portrait)
+	body_top=TextureRect.new()
+	body_bottom=TextureRect.new()
+	for body_piece in [body_top,body_bottom]:
+		body_piece.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
+		body_piece.stretch_mode=TextureRect.STRETCH_SCALE
+		body_piece.mouse_filter=Control.MOUSE_FILTER_IGNORE
+		portrait.add_child(body_piece)
+	body_bottom.texture=atlas(FACES.calm,Rect2(0,.65,1,.35))
+	set_pose(FACES.calm)
 	face_overlay=TextureRect.new()
 	face_overlay.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
 	face_overlay.stretch_mode=TextureRect.STRETCH_SCALE
 	face_overlay.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	portrait.add_child(face_overlay)
+	eye_overlay=TextureRect.new()
+	eye_overlay.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
+	eye_overlay.stretch_mode=TextureRect.STRETCH_SCALE
+	eye_overlay.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	eye_overlay.hide()
+	portrait.add_child(eye_overlay)
 	for part in ["head","cheek","shoulder"]:
 		var zone = Button.new()
 		zone.name=part
@@ -181,7 +207,7 @@ func build() -> void:
 	shell.add_child(ending)
 	reset_dialog=ConfirmationDialog.new()
 	reset_dialog.title="最初から始める"
-	reset_dialog.dialog_text="この端末の進行を上書きして、初対面から始めますか？"
+	reset_dialog.dialog_text="進行を上書きして、\n初対面からやり直しますか？"
 	reset_dialog.dialog_autowrap=true
 	reset_dialog.ok_button_text="最初から"
 	reset_dialog.cancel_button_text="戻る"
@@ -191,6 +217,7 @@ func build() -> void:
 	settings.title="設定"
 	settings.ok_button_text="閉じる"
 	var settings_box = VBoxContainer.new()
+	settings_box.custom_minimum_size.x=300
 	settings_box.add_theme_constant_override("separation",16)
 	var motion=CheckButton.new()
 	motion.text="揺れ・移動の演出を控える"
@@ -202,12 +229,17 @@ func build() -> void:
 		preferences.set_value("display","reduce_motion",on)
 		preferences.save(SETTINGS_PATH))
 	settings_box.add_child(motion)
-	settings_box.add_child(button("最初から始める",func(): settings.hide();reset_dialog.popup_centered(Vector2i(500,200))))
+	settings_box.add_child(button("最初から始める",func(): settings.hide();confirm_restart()))
 	var credits=label("第1ステージ / 夏希と、最初の約束。\nGodot Engine — MIT License\nNoto Sans JP — SIL Open Font License\nキャラクター・素材：AI生成を含む\n進行はこの端末に保存されます。",14)
 	credits.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+	credits.custom_minimum_size.x=300
+	credits.add_theme_color_override("font_color",Color("ededeb"))
 	settings_box.add_child(credits)
 	settings.add_child(settings_box)
 	add_child(settings)
+	for dialog_button in [settings.get_ok_button(),reset_dialog.get_ok_button(),reset_dialog.get_cancel_button()]:
+		for color_name in ["font_color","font_hover_color","font_pressed_color","font_focus_color"]:
+			dialog_button.add_theme_color_override(color_name,Color("30372f"))
 
 func layout() -> void:
 	if not is_instance_valid(shell): return
@@ -233,8 +265,14 @@ func layout() -> void:
 	portrait.size=Vector2(pw,ph)
 	portrait_home=Vector2((w-pw)/2-((44 if close_view else 22) if w<500 else 0),0)
 	portrait.position=portrait_home
+	# One display pixel of overlap avoids a filtering seam at fractional zoom.
+	body_top.size=Vector2(pw,ph*.65+1)
+	body_bottom.position=Vector2(0,ph*.65-1)
+	body_bottom.size=Vector2(pw,ph*.35+1)
 	face_overlay.position=Vector2(pw*.32,ph*.085)
 	face_overlay.size=Vector2(pw*.33,ph*.10)
+	eye_overlay.position=Vector2(pw*.39,ph*.105)
+	eye_overlay.size=Vector2(pw*.20,ph*.027)
 	var zones={"head":Rect2(.32,.025,.32,.075),"cheek":Rect2(.36,.10,.28,.075),"shoulder":Rect2(.22,.20,.55,.075)}
 	for part in zones:
 		var rect: Rect2 = zones[part]
@@ -264,6 +302,10 @@ func perform(action: String) -> void:
 	resume_button.hide()
 	quiet_timer=0
 	show_scene()
+	if action in ["greet","quiet","introduce","nod","return_greet"] and not reduce_motion:
+		tween=create_tween()
+		tween.tween_property(portrait,"position",portrait_home+Vector2(0,5),.18)
+		tween.tween_property(portrait,"position",portrait_home,.25)
 
 func touch(part: String) -> void:
 	if state.ended(): return
@@ -295,13 +337,14 @@ func show_scene(write: bool = true) -> void:
 	var ticket: int = serial
 	busy=true
 	var scene: Dictionary=state.scene()
-	portrait.texture=SWAT if state.phase=="rejected" else BLOCK if state.phase=="block" else FACES.calm
+	set_pose(SWAT if state.phase=="rejected" else BLOCK if state.phase=="block" else RECEIVE if state.phase=="thanks" else FACES.calm)
+	eye_overlay.hide()
+	blink_elapsed=-1
+	blink_clock=0
 	face_overlay.visible=state.phase not in ["block","rejected"]
-	var face_atlas=AtlasTexture.new()
-	var face_source: Texture2D=FACES.get(scene.face,FACES.calm)
-	face_atlas.atlas=face_source
-	face_atlas.region=Rect2(face_source.get_width()*.32,face_source.get_height()*.085,face_source.get_width()*.33,face_source.get_height()*.10)
-	face_overlay.texture=face_atlas
+	set_face(scene.face)
+	if state.phase=="arrival":
+		face_overlay.texture=atlas(GLANCE,Rect2(.32,.085,.33,.10))
 	portrait.modulate=Color.WHITE
 	name_label.text="日向 夏希" if state.flags.get("name",false) else "夕方の電車"
 	relationship.text=("次の約束" if state.phase=="promise" else "打ち解けてきた" if state.trust>=45 else "顔見知り" if state.trust>=15 else "初対面")+"  "+str(state.trust)
@@ -323,6 +366,8 @@ func show_scene(write: bool = true) -> void:
 	await get_tree().create_timer(maxf(1.6,scene.line.length()*.055) if state.phase!="recover" else 3.0).timeout
 	if ticket!=serial:return
 	busy=false
+	if state.phase=="thanks":set_face("smile")
+	if state.phase=="arrival":set_face(scene.face)
 	if state.ended():
 		show_ending()
 	else:
@@ -337,6 +382,40 @@ func fit_bubble() -> void:
 	bubble.size.y=maxf(48,text_height+24)
 	bubble_text.position=Vector2(14,12)
 	bubble_text.size=Vector2(text_width,bubble.size.y-24)
+
+func atlas(source: Texture2D, area: Rect2) -> AtlasTexture:
+	var result=AtlasTexture.new()
+	result.atlas=source
+	result.region=Rect2(area.position*source.get_size(),area.size*source.get_size())
+	return result
+
+func set_pose(source: Texture2D) -> void:
+	body_top.texture=atlas(source,Rect2(0,0,1,.65))
+
+func set_face(face: String) -> void:
+	var source: Texture2D=SURPRISE if face=="surprise" else CONFUSED if face=="confused" else FACES.get(face,FACES.calm)
+	face_overlay.texture=atlas(source,Rect2(.32,.085,.33,.10))
+
+func update_blink(delta: float) -> void:
+	if reduce_motion or state.ended() or not face_overlay.visible:
+		eye_overlay.hide()
+		blink_elapsed=-1
+		return
+	if blink_elapsed>=0:
+		blink_elapsed+=delta
+		if blink_elapsed>.22:
+			eye_overlay.hide()
+			blink_elapsed=-1
+			next_blink=randf_range(4,7)
+		else:
+			eye_overlay.texture=atlas(BLINK if blink_elapsed>.06 and blink_elapsed<.16 else HALF_BLINK,Rect2(.39,.105,.20,.027))
+	else:
+		blink_clock+=delta
+		if blink_clock>next_blink:
+			blink_clock=0
+			blink_elapsed=0
+			eye_overlay.texture=atlas(HALF_BLINK,Rect2(.39,.105,.20,.027))
+			eye_overlay.show()
 
 func animate_touch(part: String, gesture: String) -> void:
 	if tween and tween.is_valid():tween.kill()
@@ -376,13 +455,14 @@ func show_ending() -> void:
 		var detail=label("第1ステージ完了。第2ステージへ進む約束を保存しました。",15)
 		detail.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
 		content.add_child(detail)
-		content.add_child(button("もう一度、初対面から",func():reset_dialog.popup_centered(Vector2i(500,200))))
+		content.add_child(button("もう一度、初対面から",confirm_restart))
 	else:
 		content.add_child(button("後日、同じ電車に乗る",func():perform("new_ride")))
 	ending.add_child(content)
 	ending.show()
 
 func _process(delta: float) -> void:
+	update_blink(delta)
 	if busy or state.ended():return
 	quiet_timer+=delta
 	if quiet_timer>next_idle:
@@ -423,3 +503,6 @@ func new_game() -> void:
 	resume_button.hide()
 	portrait.position=portrait_home
 	show_scene()
+
+func confirm_restart() -> void:
+	reset_dialog.popup_centered(Vector2i(mini(500,int(size.x)-24),200))
