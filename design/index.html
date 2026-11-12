@@ -1,0 +1,6 @@
+<!doctype html><html lang="ja"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>夏希｜第1ステージ設計</title><link rel="stylesheet" href="style.css"><body>
+<header><div><small>MONOCHROME / DESIGN BOARD</small><h1>夏希と、最初の約束。</h1><p>第1ステージ · 電車 / 初対面 → 次に会う約束</p></div><div class="tools"><button id="export">JSONを書き出す</button><label class="file">読み込む<input id="import" type="file" accept="application/json"></label></div></header>
+<div class="savebar"><span id="saved" role="status">このブラウザに自動保存 · 端末間の同期なし</span><span>企画案 / 数値・セリフは仮</span></div>
+<nav aria-label="設計の表示"><button data-view="flow" aria-pressed="true">進行マップ</button><button data-view="rules">行動・条件</button><button data-view="lines">セリフ</button><button data-view="assets">必要素材</button></nav>
+<main><section id="overview"></section><div class="workspace"><section id="board" aria-label="設計一覧"></section><aside id="inspector" aria-label="選択したイベントの編集"></aside></div></main>
+<dialog id="message"><p id="message-text"></p><button id="close-dialog">閉じる</button></dialog><script src="app.js"></script></body></html>

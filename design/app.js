@@ -1,0 +1,48 @@
+'use strict';
+(()=>{
+const KEY='natsuki-stage1-design-v1',phases=['きっかけ','顔見知り','打ち解ける','別れ際','拒否・回復'];
+const assets=[['body','電車・立ち姿','基本絵',1],['neutral','通常顔','表情',1],['surprise','驚き顔','表情',1],['wary','警戒顔','表情',1],['confused','困惑顔','表情',1],['smile','微笑み','表情',1],['angry','不機嫌顔','表情',1],['blink','半目・閉じ目','目',2],['receive','定期入れを受け取る腕','腕',1],['block','手を遮る腕','腕',1],['swat','手を払う腕','腕',1],['pass','定期入れ','小物',1],['train','電車内','背景',1]].map(([id,name,type,count])=>({id,name,type,count,status:'未着手'}));
+const event=(id,title,phase,action,condition,effect,line,motion,material,next=[])=>({id,title,phase,action,condition,effect,line,motion,assets:material,next,limit:'1乗車につき1回',status:'案'});
+const defaults={version:1,events:[
+event('lost','落とし物を知らせる',0,'定期入れを選ぶ','導入が終わり、定期入れが落ちている','関係値 +15／交流開始','あ、それ私の。ありがとう！','驚く → 定期入れを受け取る',['body','surprise','receive','pass','train'],['hello']),
+event('hello','挨拶を交わす',1,'挨拶する','落とし物を受け取ったあと','関係値 +5','さっきは助かった。私、夏希。','通常顔 → 軽い微笑み',['neutral','smile'],['talk']),
+event('talk','短い会話',1,'話題を選ぶ','会話可能／夏希が話していない','関係値 +10／名前を知った','この時間、よく乗るの？','こちらへ視線を向ける',['neutral'],['answer']),
+event('answer','返事と相づち',2,'質問に答える','夏希の質問を聞き終えた','関係値 +15／返答内容を記録','そうなんだ。私はだいたいこの時間かな。','返事まで少し間を置く',['neutral','smile'],['schedule']),
+event('schedule','乗車時間を知る',2,'乗車の話を続ける','質問に返答した／警戒が低い','関係値 +10／乗車時間を知った','次も、このくらいの時間になると思う。','微笑み',['smile'],['finish']),
+event('finish','降りる準備に気づく',3,'会話を切り上げる','夏希が駅表示を気にしている','関係値 +10／別れ際イベント','あ、もう次だ。話してたら早かったね。','駅表示を見る → こちらを見る',['neutral','smile'],['promise','friendly']),
+event('promise','次に会う約束',3,'次も会う提案をする','関係値 ≥60／名前・乗車時間を知っている／警戒 ≤1','約束フラグ ON／第2ステージ解放','じゃあ、次もこのくらいの時間に。会えたら一緒に乗ろ。','微笑み → 別れの間',['smile'],[]),
+event('friendly','顔見知りとして別れる',3,'普通に別れる','約束しない／条件に届いていない','関係を保持して後日の乗車へ','また見かけたら、声かけてね。','通常顔で別れる',['neutral'],['hello']),
+event('withdraw','身を引く',4,'頭・頬へ手を伸ばす','接触を受け入れていない／拒否は初回','警戒 +1／直前に拒否フラグ','……どうしたの？','困惑顔 → 身体を少し後ろへ',['confused','body'],['block','recover']),
+event('block','手を遮る',4,'拒否後にもう一度手を伸ばす','直前に身を引いている','警戒 +1／関係値 -5','ちょっと、やめて。','警戒顔 → 腕を上げて遮る',['wary','block'],['swat','recover']),
+event('swat','手を払う',4,'制止後も繰り返す','直前に手を遮っている','その乗車の会話を終了','やめてって言ってるでしょ。','不機嫌顔 → 手を払う → 距離を取る',['angry','swat','body'],[]),
+event('recover','手を止めて待つ',4,'手を止めて短く謝る','拒否直後／会話は終了していない','時間経過で警戒回復／関係値加点なし','……うん。','腕を戻す → 少し間を置く',['neutral','body'],['talk'])],assets};
+let data=structuredClone(defaults),view='flow',selected='lost';const $=id=>document.getElementById(id);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function valid(d){return d&&d.version===1&&Array.isArray(d.events)&&d.events.length<=200&&Array.isArray(d.assets)&&d.assets.length<=200&&new Set(d.events.map(e=>e.id)).size===d.events.length&&d.events.every(e=>['id','title','action','condition','effect','line','motion','limit','status'].every(k=>typeof e[k]==='string')&&Number.isInteger(e.phase)&&e.phase>=0&&e.phase<5&&Array.isArray(e.next)&&e.next.every(n=>d.events.some(x=>x.id===n))&&Array.isArray(e.assets)&&e.assets.every(a=>d.assets.some(x=>x.id===a)))&&d.assets.every(a=>['id','name','type','status'].every(k=>typeof a[k]==='string')&&Number.isInteger(a.count)&&a.count>0&&a.count<100);}
+try{const old=JSON.parse(localStorage.getItem(KEY));if(valid(old))data=old;}catch{}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(data));$('saved').textContent='このブラウザに保存済み · '+new Date().toLocaleTimeString('ja-JP')+' · 端末間の同期なし';}catch{$('saved').textContent='端末保存に失敗しました。JSONを書き出してください。';}}
+function notice(s){$('message-text').textContent=s;$('message').showModal();}
+function choose(id){selected=id;render();if(innerWidth<761)$('inspector').scrollIntoView({behavior:'smooth',block:'start'});}
+function card(e){return `<button class="event ${selected===e.id?'selected':''}" data-event="${esc(e.id)}"><span class="tag">${esc(e.status)} · ${esc(e.id)}</span><strong>${esc(e.title)}</strong><p>${esc(e.action)}</p><div class="next">${e.next.length?'→ '+e.next.map(id=>esc(data.events.find(x=>x.id===id)?.title||id)).join(' / '):'終点'}</div></button>`;}
+function render(){
+ document.querySelectorAll('nav button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view===view)));
+ $('overview').innerHTML=`<span class="pill">第1ステージ</span><p>${data.events.length}イベント / 素材 ${data.assets.reduce((n,a)=>n+a.count,0)}点</p><span class="tip">カードを選択して編集。変更は他の一覧にも反映。</span>`;
+ let html='';
+ if(view==='flow'){html=phases.map((p,i)=>`<section class="phase ${i===4?'branch':''}"><div class="phase-head"><h3>${i===4?'分岐':String(i+1).padStart(2,'0')} ${p}</h3><span>${i===4?'会話中の拒否・回復':'主な進行'}</span></div><div class="cards">${data.events.filter(e=>e.phase===i).map(card).join('')}</div>${i<3?'<div class="arrow">↓</div>':''}</section>`).join('');}
+ if(view==='rules'){html='<div class="table-wrap"><table><thead><tr><th>行動</th><th>発生条件</th><th>変化・結果</th><th></th></tr></thead><tbody>'+data.events.map(e=>`<tr><td>${esc(e.action)}</td><td>${esc(e.condition)}</td><td>${esc(e.effect)}</td><td><button data-event="${esc(e.id)}">編集</button></td></tr>`).join('')+'</tbody></table></div>';}
+ if(view==='lines'){html=data.events.map(e=>`<article class="line-card"><small>${esc(phases[e.phase])} / ${esc(e.title)}</small><blockquote>「${esc(e.line)}」</blockquote><p class="tip">${esc(e.motion)}<br>${esc(e.limit)}</p><button data-event="${esc(e.id)}">セリフを編集</button></article>`).join('');}
+ if(view==='assets'){html=data.assets.map(a=>{const uses=data.events.filter(e=>e.assets.includes(a.id));return `<div class="asset"><div><strong>${esc(a.name)}</strong> <span class="pill">${esc(a.type)} · ${a.count}点</span><p>使用：${uses.length?uses.map(e=>esc(e.title)).join('、'):'未割り当て'}</p></div><select aria-label="${esc(a.name)}の制作状況" data-asset="${esc(a.id)}">${['未着手','制作中','確認待ち','完成'].map(s=>`<option ${a.status===s?'selected':''}>${s}</option>`).join('')}</select></div>`;}).join('');}
+ $('board').innerHTML=html;document.querySelectorAll('[data-event]').forEach(b=>b.onclick=()=>choose(b.dataset.event));document.querySelectorAll('[data-asset]').forEach(s=>s.onchange=()=>{data.assets.find(a=>a.id===s.dataset.asset).status=s.value;save();});inspector();
+}
+function inspector(){const e=data.events.find(x=>x.id===selected)||data.events[0];if(!e){$('inspector').innerHTML='<p>イベントがありません。</p><button id="add">イベントを追加</button>';$('add').onclick=add;return;}selected=e.id;
+ const field=(name,label,multi=false)=>`<label class="field">${label}${multi?`<textarea name="${name}">${esc(e[name])}</textarea>`:`<input name="${name}" value="${esc(e[name])}">`}</label>`;
+ $('inspector').innerHTML=`<h2>イベントの編集</h2><p class="tip">${esc(e.id)} · 条件は設計メモ。ここではゲームを実行しません。</p><form id="edit">${field('title','イベント名')}<label class="field">段階<select name="phase">${phases.map((p,i)=>`<option value="${i}" ${e.phase===i?'selected':''}>${p}</option>`).join('')}</select></label>${field('action','プレイヤーの行動')}${field('condition','発生条件',true)}${field('effect','数値・フラグの変化',true)}${field('line','夏希のセリフ',true)}${field('motion','動作・表情・間',true)}${field('limit','使用回数・繰り返し条件')}<label class="field">次のイベント（複数選択可）<select name="next" multiple>${data.events.filter(x=>x.id!==e.id).map(x=>`<option value="${esc(x.id)}" ${e.next.includes(x.id)?'selected':''}>${esc(x.title)}</option>`).join('')}</select></label><label class="field">使用する素材（複数選択可）<select name="assets" multiple>${data.assets.map(a=>`<option value="${esc(a.id)}" ${e.assets.includes(a.id)?'selected':''}>${esc(a.name)}</option>`).join('')}</select></label><label class="field">設計状態<select name="status">${['案','要検討','確定'].map(s=>`<option ${e.status===s?'selected':''}>${s}</option>`).join('')}</select></label><button class="primary" type="submit">変更を保存</button></form><div class="footer-action"><button id="add">イベントを追加</button> <button id="remove" class="danger">削除</button></div>`;
+ $('edit').oninput=()=>{const f=new FormData($('edit'));for(const k of ['title','action','condition','effect','line','motion','limit','status'])e[k]=String(f.get(k));e.phase=Number(f.get('phase'));e.next=f.getAll('next');e.assets=f.getAll('assets');save();};
+ $('edit').onsubmit=ev=>{ev.preventDefault();const f=new FormData(ev.target);for(const k of ['title','action','condition','effect','line','motion','limit','status'])e[k]=String(f.get(k));e.phase=Number(f.get('phase'));e.next=f.getAll('next');e.assets=f.getAll('assets');save();render();};
+ $('add').onclick=add;$('remove').onclick=()=>{if(!confirm('「'+e.title+'」を削除しますか？接続先からも外れます。'))return;data.events=data.events.filter(x=>x.id!==e.id);data.events.forEach(x=>x.next=x.next.filter(id=>id!==e.id));selected=data.events[0]?.id;save();render();};
+}
+function add(){const id='event-'+Date.now();data.events.push(event(id,'新しいイベント',0,'','','','','',[]));selected=id;save();render();}
+ document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{view=b.dataset.view;render();});
+ $('export').onclick=()=>{const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='natsuki-stage1-design.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
+ $('import').onchange=async ev=>{const f=ev.target.files[0];if(!f)return;try{if(f.size>2000000)throw Error('ファイルは2MB以下にしてください。');const d=JSON.parse(await f.text());if(!valid(d))throw Error('設計データの形式、イベントの接続先、素材の参照を確認してください。');if(!confirm('このブラウザの設計を読み込んだ内容に置き換えますか？'))return;data=d;selected=data.events[0]?.id;save();render();}catch(e){notice('読み込みできません：'+e.message);}finally{ev.target.value='';}};
+ $('close-dialog').onclick=()=>$('message').close();render();
+})();
