@@ -521,8 +521,6 @@ func animate_touch(part: String, gesture: String) -> void:
 	hand.show()
 	tween=create_tween()
 	if gesture in ["withdraw","block","swat"]:
-		if not reduce_motion:
-			tween.tween_property(hand,"position",hand.position+Vector2(95,80 if gesture=="swat" else 25),.25)
 		tween.tween_property(hand,"modulate:a",0.0,.18)
 	else:
 		tween.tween_interval(.5)

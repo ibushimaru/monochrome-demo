@@ -11,7 +11,7 @@
   "noticed": {
     "line": "……え？",
     "face": "surprise",
-    "hint": "こちらに気づいた。足元の定期入れを知らせよう。",
+    "hint": "こちらに気づいた。",
     "choices": [],
     "direct_actions": {
       "pass": "これ、落としましたよ。"
@@ -110,7 +110,7 @@
   "reply_reserved": {
     "line": "あ、ごめん。\n急に聞いても\n困るよね。",
     "face": "confused",
-    "hint": "急いで答える必要はなさそうだ。",
+    "hint": "",
     "choices": [
       [
         "answer_late",
@@ -183,7 +183,7 @@
   "interrupted": {
     "line": "……あ、うん。\n何の話だっけ。",
     "face": "confused",
-    "hint": "少し会話が途切れた。相手の言葉を待とう。",
+    "hint": "",
     "choices": [
       [
         "repair",
@@ -234,7 +234,7 @@
   "invite": {
     "line": "今日は、\nありがとう。\nお話もできて。",
     "face": "smile",
-    "hint": "別れ際。次に会う約束をするなら、今。",
+    "hint": "",
     "choices": [
       [
         "invite",
@@ -263,13 +263,13 @@
   "declined": {
     "line": "……また\n会ったときにね。\n今日はここで。",
     "face": "wary",
-    "hint": "まだ少し距離がある。次の乗車でゆっくり話そう。",
+    "hint": "",
     "choices": []
   },
   "withdraw": {
     "line": "…どうしたの？",
     "face": "confused",
-    "hint": "夏希の表情が曇った。手を止めて、距離を保とう。",
+    "hint": "",
     "choices": [
       [
         "apologize",
@@ -303,7 +303,7 @@
   "recover": {
     "line": "……うん。\nもうしないでね。",
     "face": "wary",
-    "hint": "夏希が少し落ち着いた。距離を保って、会話に戻ろう。",
+    "hint": "",
     "choices": [
       [
         "resume",
@@ -333,7 +333,7 @@
   "return_wary": {
     "line": "……こんにちは。",
     "face": "wary",
-    "hint": "別の日。まずは距離を保って、挨拶から。",
+    "hint": "別の日、同じ電車で夏希に会った。",
     "choices": [
       [
         "return_greet",
@@ -345,7 +345,7 @@
   "return_chat": {
     "line": "今日は、\nどんな一日？",
     "face": "calm",
-    "hint": "夏希の言葉を聞いてから返そう。",
+    "hint": "",
     "choices": [
       [
         "share",

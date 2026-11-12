@@ -24,11 +24,15 @@ func check_stationary() -> void:
 	Engine.time_scale=1
 	var timer=create_timer(.8)
 	var moved=false
+	var hand_origin=game.hand.position
+	var hand_moved=false
 	while timer.time_left>0:
 		await process_frame
 		moved=moved or not game.portrait.position.is_equal_approx(game.portrait_home)
+		hand_moved=hand_moved or not game.hand.position.is_equal_approx(hand_origin)
 	Engine.time_scale=speed
 	check(not moved,"Portrait must stay fixed during reaction: "+game.state.phase)
+	check(not hand_moved,"Hand must not slide during reaction: "+game.state.phase)
 func choose(index: int = 0) -> void:
 	check(game.choices.get_child_count()>index, "Choice exists at "+game.state.phase)
 	if game.choices.get_child_count()<=index:return
