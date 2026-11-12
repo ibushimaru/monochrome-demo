@@ -95,8 +95,6 @@ func _ready() -> void:
 	has_save = not data.is_empty()
 	resume_button.visible = has_save
 	show_scene(false)
-	if has_save:
-		hint.text = "前回の続きがあります。「続きから」で再開できます。"
 
 func box(fill: Color, stroke: Color, radius: int = 12) -> StyleBoxFlat:
 	var b = StyleBoxFlat.new()
@@ -495,7 +493,7 @@ func touch(part: String) -> void:
 func show_scene(write: bool = true, keep_player: bool = false) -> void:
 	player_turn=false
 	player_dialog.visible=keep_player
-	hint.visible=not keep_player
+	hint.hide()
 	if tween and tween.is_valid():tween.kill()
 	portrait.position=portrait_home
 	hand.hide()
@@ -515,7 +513,7 @@ func show_scene(write: bool = true, keep_player: bool = false) -> void:
 	name_label.text="日向 夏希" if state.flags.get("name",false) else "夕方の電車"
 	relationship.text=("次の約束" if state.phase=="promise" else "打ち解けてきた" if state.trust>=45 else "顔見知り" if state.trust>=15 else "初対面")+"  "+str(state.trust)
 	meter.value=state.trust
-	hint.text=scene.hint
+	hint.text=""
 	wallet.visible=state.phase in ["intro","noticed"]
 	for child in choices.get_children():
 		child.queue_free()
@@ -625,8 +623,7 @@ func _process(delta: float) -> void:
 		quiet_timer=0
 		next_idle=18
 		idle_index+=1
-		if state.phase in ["intro","noticed"]:
-			hint.text="足元の定期入れをタップすると、持ち主に知らせられる。"
+
 
 func save_game() -> void:
 	var file=FileAccess.open(SAVE_PATH+".tmp",FileAccess.WRITE)

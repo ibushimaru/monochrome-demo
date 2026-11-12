@@ -2,7 +2,7 @@
   "intro": {
     "line": "……。",
     "face": "calm",
-    "hint": "夕方の電車。足元に、小さな定期入れが落ちた。",
+    "hint": "",
     "choices": [],
     "direct_actions": {
       "pass": "これ、落としましたよ。"
@@ -11,7 +11,7 @@
   "noticed": {
     "line": "……え？",
     "face": "surprise",
-    "hint": "こちらに気づいた。",
+    "hint": "",
     "choices": [],
     "direct_actions": {
       "pass": "これ、落としましたよ。"
@@ -20,7 +20,7 @@
   "thanks": {
     "line": "あ、私のだ。\nありがとう！",
     "face": "surprise",
-    "hint": "定期入れを受け取り、少し表情が緩んだ。",
+    "hint": "",
     "choices": [
       [
         "greet",
@@ -37,7 +37,7 @@
   "name": {
     "line": "私、夏希。\n日向夏希。",
     "face": "smile",
-    "hint": "初対面の距離が、ほんの少し縮まる。",
+    "hint": "",
     "choices": [
       [
         "introduce",
@@ -54,7 +54,7 @@
   "question": {
     "line": "この時間、\nよく乗るの？",
     "face": "calm",
-    "hint": "夏希のほうから話しかけてきた。",
+    "hint": "",
     "choices": [
       [
         "usual",
@@ -76,7 +76,7 @@
   "reply_usual": {
     "line": "そうなんだ。\n前も同じ車両に\nいたかもね。",
     "face": "smile",
-    "hint": "答えを聞いて、夏希が小さく笑う。",
+    "hint": "",
     "choices": [
       [
         "ask",
@@ -93,7 +93,7 @@
   "reply_rare": {
     "line": "そっか。\n今日会ったのは\n偶然なんだね。",
     "face": "calm",
-    "hint": "窓の向こうを見て、こちらに視線を戻した。",
+    "hint": "",
     "choices": [
       [
         "ask",
@@ -127,7 +127,7 @@
   "topic": {
     "line": "大学の部活帰り。\n今日は早めに\n終わったんだ。",
     "face": "calm",
-    "hint": "夏希は20歳の大学生。今日は部活帰りらしい。",
+    "hint": "",
     "choices": [
       [
         "sport",
@@ -149,7 +149,7 @@
   "sport": {
     "line": "バドミントン。\n苦手な相手から\n一本取れたんだ。",
     "face": "smile",
-    "hint": "話す声が少し弾んだ。",
+    "hint": "",
     "choices": [
       [
         "respond",
@@ -166,7 +166,7 @@
   "scenery": {
     "line": "橋のところ、\n好きなんだ。\n空が広く見えて。",
     "face": "smile",
-    "hint": "二人で同じ窓の外を見る。",
+    "hint": "",
     "choices": [
       [
         "respond",
@@ -200,7 +200,7 @@
   "schedule": {
     "line": "だいたい、\nこの時間の電車。\nいつもこの辺り。",
     "face": "calm",
-    "hint": "次に会えそうな時間と場所が分かった。",
+    "hint": "",
     "choices": [
       [
         "remember",
@@ -217,7 +217,7 @@
   "arrival": {
     "line": "あ、もう次だ。\n話してたら\n早かったね。",
     "face": "smile",
-    "hint": "夏希が駅表示を確認して、降りる準備を始めた。",
+    "hint": "",
     "choices": [
       [
         "give_space",
@@ -251,13 +251,13 @@
   "promise": {
     "line": "うん。\n次もこの時間に。\n一緒に乗ろ。",
     "face": "smile",
-    "hint": "第1ステージ完了 — 次の約束",
+    "hint": "",
     "choices": []
   },
   "friendly": {
     "line": "また見かけたら\n声かけてね。\nじゃあ、また。",
     "face": "calm",
-    "hint": "今日はここまで。顔見知りになった。",
+    "hint": "",
     "choices": []
   },
   "declined": {
@@ -286,7 +286,7 @@
   "block": {
     "line": "ちょっと。\nやめて。",
     "face": "wary",
-    "hint": "夏希がこちらの手を遮った。",
+    "hint": "",
     "choices": [
       [
         "apologize",
@@ -315,13 +315,13 @@
   "rejected": {
     "line": "やめてって\n言ってるでしょ。",
     "face": "wary",
-    "hint": "夏希は手を払い、別の場所へ移った。今日の会話は終了。",
+    "hint": "",
     "choices": []
   },
   "return": {
     "line": "あ、この前の。\n今日はこの時間\nなんだね。",
     "face": "calm",
-    "hint": "別の日、同じ電車で夏希に会った。",
+    "hint": "",
     "choices": [
       [
         "return_greet",
@@ -333,7 +333,7 @@
   "return_wary": {
     "line": "……こんにちは。",
     "face": "wary",
-    "hint": "別の日、同じ電車で夏希に会った。",
+    "hint": "",
     "choices": [
       [
         "return_greet",
@@ -362,7 +362,7 @@
   "return_listen": {
     "line": "今日は練習が\n長くて。\n帰りに話せるの、\nいいね。",
     "face": "smile",
-    "hint": "今日は、少し疲れているようだ。",
+    "hint": "",
     "choices": [
       [
         "return_respond",
@@ -374,7 +374,7 @@
   "invite_hold": {
     "line": "ごめん、次で\n降りないと。",
     "face": "wary",
-    "hint": "夏希が扉のほうを気にしている。",
+    "hint": "",
     "choices": [
       [
         "invite",
@@ -391,7 +391,7 @@
   "return_shared": {
     "line": "そっか。\nお疲れさま。\n私は練習が\n長くて。",
     "face": "calm",
-    "hint": "夏希も今日の出来事を話し始めた。",
+    "hint": "",
     "choices": [
       [
         "return_respond",

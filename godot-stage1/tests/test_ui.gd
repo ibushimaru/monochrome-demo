@@ -132,6 +132,7 @@ func run() -> void:
 		game.state.phase=phase
 		game.show_scene(false)
 		await settle()
+		check(not game.hint.visible and game.hint.text.is_empty(),"No scene narration: "+phase)
 		var line_height=game.FONT.get_height(game.bubble_text.get_theme_font_size("font_size"))
 		check(game.bubble_text.get_line_count()*line_height+24<=game.bubble.size.y+1,"Bubble contains all lines: "+phase)
 		if game.choices.get_child_count()>0:
