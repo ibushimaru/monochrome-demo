@@ -6,7 +6,7 @@ class TestGame extends "res://scripts/main.gd":
 	var saved: Dictionary = {}
 	var preferences_saved: Dictionary = {}
 	func save_preferences() -> void:
-		preferences_saved={"volume":ambient_volume,"muted":ambient_muted,"motion":reduce_motion,"card_pinned":card_pinned}
+		preferences_saved={"volume":ambient_volume,"muted":ambient_muted,"motion":reduce_motion,"card_pinned":card_pinned,"voice_volume":voice_volume,"voice_muted":voice_muted}
 	func save_game() -> void:
 		saves += 1
 		saved = state.snapshot()
@@ -18,7 +18,7 @@ var failures: Array[String] = []
 func check(ok: bool, message: String) -> void:
 	if not ok: failures.append(message)
 func settle() -> void:
-	await create_timer(7.0).timeout
+	await create_timer(15.0).timeout
 func check_stationary() -> void:
 	var speed=Engine.time_scale
 	Engine.time_scale=1
@@ -68,6 +68,22 @@ func run() -> void:
 	game.ambient_slider.value=0
 	check(game.ambient_player.stream_paused,"Zero volume is silent")
 	game.ambient_slider.value=45
+	var train_muted_before=game.ambient_muted
+	game.voice_slider.value=35
+	game.voice_toggle.button_pressed=true
+	check(AudioServer.is_bus_mute(game.voice_bus) and game.preferences_saved.voice_muted,"Voice mute is applied and saved")
+	check(game.ambient_muted==train_muted_before,"Voice mute does not change train audio")
+	game.voice_toggle.button_pressed=false
+	check(not AudioServer.is_bus_mute(game.voice_bus) and is_equal_approx(db_to_linear(game.voice_player.volume_db),.35),"Voice volume is independent")
+	game.voice_slider.value=0
+	check(AudioServer.is_bus_mute(game.voice_bus),"Zero voice volume mutes the voice bus")
+	game.voice_slider.value=80
+	var duration=game.play_voice("thanks")
+	check(duration>0 and game.current_voice=="thanks" and not game.voice_player.stream.loop,"Voice clip plays without looping")
+	game.play_voice("name")
+	check(game.current_voice=="name" and game.voice_player.stream.resource_path.ends_with("/name.ogg"),"Next reply replaces the old voice")
+	game.stop_voice()
+	check(game.current_voice.is_empty() and game.voice_player.stream==null,"Voice stop clears active clip")
 	game.reduce_motion=false
 	game.blink_clock=10
 	game.update_blink(0.01)
@@ -133,6 +149,7 @@ func run() -> void:
 		game.show_scene(false)
 		await settle()
 		check(not game.hint.visible and game.hint.text.is_empty(),"No scene narration: "+phase)
+		check(game.current_voice==("" if phase=="intro" else phase),"Every spoken scene selects its voice: "+phase)
 		var line_height=game.FONT.get_height(game.bubble_text.get_theme_font_size("font_size"))
 		check(game.bubble_text.get_line_count()*line_height+24<=game.bubble.size.y+1,"Bubble contains all lines: "+phase)
 		if game.choices.get_child_count()>0:
@@ -144,7 +161,9 @@ func run() -> void:
 			check(game.player_text.get_line_count()*game.FONT.get_height(20)<=game.player_text.size.y,"Player line fits: "+phase+"/"+option[0])
 	game.new_game()
 	await settle()
+	game.play_voice("thanks")
 	game.perform("pass")
+	check(game.current_voice.is_empty(),"Player turn stops Natsuki voice")
 	game.new_game()
 	await settle()
 	check(game.state.phase=="intro" and not game.player_dialog.visible,"Restart cancels pending dialogue and transition")

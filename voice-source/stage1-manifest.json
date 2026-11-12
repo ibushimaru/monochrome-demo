@@ -1,0 +1,268 @@
+{
+  "model": "Aratako/Irodori-TTS-v4-Large",
+  "precision": "fp32",
+  "reference_sha256": "33d0f7a168f5dd10e5ed2ef465637c4b02249f608c8f023b574b32af483384f0",
+  "lines": {
+    "noticed": {
+      "text": "……え？",
+      "spoken_text": "え？",
+      "caption": "20代の女性。柔らかく澄んだ中高音の声。軽く驚いてから、自然な会話の口調で話す。",
+      "seed": 5200,
+      "fingerprint": "34771b83a31500c8e0b5d71b904f3abcec0d1cfbc7576b4def680255661d5149",
+      "duration_seconds": 1.08,
+      "generation_seconds": 7.98
+    },
+    "thanks": {
+      "text": "あ、私のだ。ありがとう！",
+      "spoken_text": "あ、私のだ。ありがとう！",
+      "caption": "20代の女性。柔らかく澄んだ中高音の声。軽く驚いてから、自然な会話の口調で話す。",
+      "seed": 5101,
+      "fingerprint": "0b7fd4612cca9f15943a8c69a472badf9daeaa987a2414d9e3a019078fa531c4",
+      "duration_seconds": 3.76,
+      "generation_seconds": 9.75
+    },
+    "name": {
+      "text": "私、夏希。日向夏希。",
+      "spoken_text": "私、なつき。ひなたなつき。",
+      "caption": "20代の女性。柔らかく澄んだ中高音の声。親しみを込めて、穏やかに明るく話す。",
+      "seed": 5102,
+      "fingerprint": "c156dca9945ad6a2690b0583194b95ec14026d59f063b1117c088ca2990ca447",
+      "duration_seconds": 3.96,
+      "generation_seconds": 10.74
+    },
+    "question": {
+      "text": "この時間、よく乗るの？",
+      "spoken_text": "この時間、よく乗るの？",
+      "caption": "20代の女性。柔らかく澄んだ中高音の声。落ち着いた自然な会話の口調で話す。",
+      "seed": 5103,
+      "fingerprint": "a33a893e58f44e8a36462208489440055d6dbc644905e1a3978acb55c4f4bf6e",
+      "duration_seconds": 2.72,
+      "generation_seconds": 8.04
+    },
+    "reply_usual": {
+      "text": "そうなんだ。前も同じ車両にいたかもね。",
+      "spoken_text": "そうなんだ。前も同じ車両にいたかもね。",
+      "caption": "20代の女性。柔らかく澄んだ中高音の声。親しみを込めて、穏やかに明るく話す。",
+      "seed": 5104,
+      "fingerprint": "6578e269612b0bb1d5e869052451e61cb4b904dda0210bca41af9aa1029e686c",
+      "duration_seconds": 4.72,
+      "generation_seconds": 11.98
+    },
+    "reply_rare": {
+      "text": "そっか。今日会ったのは偶然なんだね。",
+      "spoken_text": "そっか。今日会ったのは偶然なんだね。",
+      "caption": "20代の女性。柔らかく澄んだ中高音の声。落ち着いた自然な会話の口調で話す。",
+      "seed": 5105,
+      "fingerprint": "cdd4063197e3cff179dc1e770479807afa70d2d240e6b478623ed7776842415f",
+      "duration_seconds": 4.48,
+      "generation_seconds": 12.07
+    },
+    "reply_reserved": {
+      "text": "あ、ごめん。急に聞いても困るよね。",
+      "spoken_text": "あ、ごめん。急に聞いても困るよね。",
+      "caption": "20代の女性。柔らかく澄んだ中高音の声。少し戸惑いながら、自然な会話の口調で話す。",
+      "seed": 5106,
+      "fingerprint": "2deef37a6dc7d620bc34e565019083f3c1290259eef1e241da4dc1520ce3e75d",
+      "duration_seconds": 4.4,
+      "generation_seconds": 11.78
+    },
+    "topic": {
+      "text": "大学の部活帰り。今日は早めに終わったんだ。",
+      "spoken_text": "大学の部活帰り。今日は早めに終わったんだ。",
+      "caption": "20代の女性。柔らかく澄んだ中高音の声。落ち着いた自然な会話の口調で話す。",
+      "seed": 5107,
+      "fingerprint": "175c27767bebb30b25e68aedaf28f092c0ab71c5bbb3ae201dac65467cde9730",
+      "duration_seconds": 4.96,
+      "generation_seconds": 12.62
+    },
+    "sport": {
+      "text": "バドミントン。苦手な相手から一本取れたんだ。",
+      "spoken_text": "バドミントン。苦手な相手から一本取れたんだ。",
+      "caption": "20代の女性。柔らかく澄んだ中高音の声。親しみを込めて、穏やかに明るく話す。",
+      "seed": 5108,
+      "fingerprint": "28ae819fac1cbe92f5af18e3bea0f7536bfdd3b0620bc5a124fd0b97c893fad8",
+      "duration_seconds": 4.88,
+      "generation_seconds": 12.4
+    },
+    "scenery": {
+      "text": "橋のところ、好きなんだ。空が広く見えて。",
+      "spoken_text": "橋のところ、好きなんだ。空が広く見えて。",
+      "caption": "20代の女性。柔らかく澄んだ中高音の声。親しみを込めて、穏やかに明るく話す。",
+      "seed": 5109,
+      "fingerprint": "53aa2d84f9b5cb2ba8e6d4aa70dcdbff734a1c836d598e07a46c740f1f7eabaf",
+      "duration_seconds": 4.84,
+      "generation_seconds": 12.46
+    },
+    "interrupted": {
+      "text": "……あ、うん。何の話だっけ。",
+      "spoken_text": "……あ、うん。何の話だっけ。",
+      "caption": "20代の女性。柔らかく澄んだ中高音の声。少し戸惑いながら、自然な会話の口調で話す。",
+      "seed": 5110,
+      "fingerprint": "d6fa0877297507dcc0fbf9b6d397e457c64836ea77fbd21fd78f26ef4f31bcba",
+      "duration_seconds": 4.4,
+      "generation_seconds": 11.29
+    },
+    "schedule": {
+      "text": "だいたい、この時間の電車。いつもこの辺り。",
+      "spoken_text": "だいたい、この時間の電車。いつもこの辺り。",
+      "caption": "20代の女性。柔らかく澄んだ中高音の声。落ち着いた自然な会話の口調で話す。",
+      "seed": 5111,
+      "fingerprint": "9f32e82c7423b1e7c946052ded14d2289ebf1bb3f8da4d502aceda409329fbcb",
+      "duration_seconds": 5.24,
+      "generation_seconds": 13.32
+    },
+    "arrival": {
+      "text": "あ、もう次だ。話してたら早かったね。",
+      "spoken_text": "あ、もう次だ。話してたら早かったね。",
+      "caption": "20代の女性。柔らかく澄んだ中高音の声。親しみを込めて、穏やかに明るく話す。",
+      "seed": 5112,
+      "fingerprint": "f7921f1272e4de4deb5f26634e7d4790f6003483b2bafe9e94d9ca3ac1294c04",
+      "duration_seconds": 4.72,
+      "generation_seconds": 11.96
+    },
+    "invite": {
+      "text": "今日は、ありがとう。お話もできて。",
+      "spoken_text": "今日は、ありがとう。お話もできて。",
+      "caption": "20代の女性。柔らかく澄んだ中高音の声。親しみを込めて、穏やかに明るく話す。",
+      "seed": 5113,
+      "fingerprint": "e9b12ff308985097a33e4c988ebba7795272244a74a9127827524a62d96c9bff",
+      "duration_seconds": 3.52,
+      "generation_seconds": 9.51
+    },
+    "promise": {
+      "text": "うん。次もこの時間に。一緒に乗ろ。",
+      "spoken_text": "うん。次もこの時間に。一緒に乗ろ。",
+      "caption": "20代の女性。柔らかく澄んだ中高音の声。親しみを込めて、穏やかに明るく話す。",
+      "seed": 5114,
+      "fingerprint": "e25ecf49b24d5d1cd40c76d1e7441af81505984db83f5ef9e34439a9d0acf492",
+      "duration_seconds": 4.48,
+      "generation_seconds": 11.53
+    },
+    "friendly": {
+      "text": "また見かけたら声かけてね。じゃあ、また。",
+      "spoken_text": "また見かけたら声かけてね。じゃあ、また。",
+      "caption": "20代の女性。柔らかく澄んだ中高音の声。落ち着いた自然な会話の口調で話す。",
+      "seed": 5115,
+      "fingerprint": "4f727af0b617c0b38044cb59c0db05a44507a18f82952ebb13bdb0a52b1dee76",
+      "duration_seconds": 4.72,
+      "generation_seconds": 13.13
+    },
+    "declined": {
+      "text": "……また会ったときにね。今日はここで。",
+      "spoken_text": "……また会ったときにね。今日はここで。",
+      "caption": "20代の女性。柔らかく澄んだ中高音の声。落ち着いた声で、少し警戒しながら短く話す。",
+      "seed": 5116,
+      "fingerprint": "5f4d71e91224c85e535885ea1632322bc07260ede00d4510d5efed9e54836074",
+      "duration_seconds": 4.44,
+      "generation_seconds": 11.3
+    },
+    "withdraw": {
+      "text": "…どうしたの？",
+      "spoken_text": "…どうしたの？",
+      "caption": "20代の女性。柔らかく澄んだ中高音の声。少し戸惑いながら、自然な会話の口調で話す。",
+      "seed": 5117,
+      "fingerprint": "df9b3356c5c360035fde38b3fd426457d77bb3af9f0b5201838a2ded02193d71",
+      "duration_seconds": 2.76,
+      "generation_seconds": 8.17
+    },
+    "block": {
+      "text": "ちょっと。やめて。",
+      "spoken_text": "ちょっと。やめて。",
+      "caption": "20代の女性。柔らかく澄んだ中高音の声。落ち着いた声で、少し警戒しながら短く話す。",
+      "seed": 5118,
+      "fingerprint": "76ecf16264546ea74f73efb34938aee2e48e6c3dbea4432d0a56af86c5e1c1a2",
+      "duration_seconds": 2.56,
+      "generation_seconds": 7.48
+    },
+    "recover": {
+      "text": "……うん。もうしないでね。",
+      "spoken_text": "……うん。もうしないでね。",
+      "caption": "20代の女性。柔らかく澄んだ中高音の声。落ち着いた声で、少し警戒しながら短く話す。",
+      "seed": 5119,
+      "fingerprint": "647020ec01a3ac40db9a66b9c7e97f0b167601e21c304f5f170ccfdde02a01c2",
+      "duration_seconds": 3.68,
+      "generation_seconds": 9.54
+    },
+    "rejected": {
+      "text": "やめてって言ってるでしょ。",
+      "spoken_text": "やめてって言ってるでしょ。",
+      "caption": "20代の女性。柔らかく澄んだ中高音の声。落ち着いた声で、少し警戒しながら短く話す。",
+      "seed": 5120,
+      "fingerprint": "a7109d9a7857f300b74bcbdcbe95ec3710a79b46ac2df8b844fedcbc54444e09",
+      "duration_seconds": 3.04,
+      "generation_seconds": 8.35
+    },
+    "return": {
+      "text": "あ、この前の。今日はこの時間なんだね。",
+      "spoken_text": "あ、この前の。今日はこの時間なんだね。",
+      "caption": "20代の女性。柔らかく澄んだ中高音の声。落ち着いた自然な会話の口調で話す。",
+      "seed": 5121,
+      "fingerprint": "ea9d9ac9a6906b3b5d6e8a0350d1a57e96ef1ed898d6dc4f8eb20769704d9575",
+      "duration_seconds": 4.88,
+      "generation_seconds": 11.89
+    },
+    "return_wary": {
+      "text": "……こんにちは。",
+      "spoken_text": "……こんにちは。",
+      "caption": "20代の女性。柔らかく澄んだ中高音の声。落ち着いた声で、少し警戒しながら短く話す。",
+      "seed": 5122,
+      "fingerprint": "1516ee33a1caaacfa2958886a7979f4fa205eef115c647971449ce2c5893c977",
+      "duration_seconds": 2.2,
+      "generation_seconds": 7.29
+    },
+    "return_chat": {
+      "text": "今日は、どんな一日？",
+      "spoken_text": "今日は、どんな一日？",
+      "caption": "20代の女性。柔らかく澄んだ中高音の声。落ち着いた自然な会話の口調で話す。",
+      "seed": 5123,
+      "fingerprint": "a55a389aca518ce9d4b5e12465b53ca509ff6e2aa52febb03d217c300685cf86",
+      "duration_seconds": 2.6,
+      "generation_seconds": 7.99
+    },
+    "return_listen": {
+      "text": "今日は練習が長くて。帰りに話せるの、いいね。",
+      "spoken_text": "今日は練習が長くて。帰りに話せるの、いいね。",
+      "caption": "20代の女性。柔らかく澄んだ中高音の声。親しみを込めて、穏やかに明るく話す。",
+      "seed": 5124,
+      "fingerprint": "cfd1aa12d1c63becdddc45d85bddfbc706d5d129d3c8ac88e8ecc54368fa843e",
+      "duration_seconds": 5.24,
+      "generation_seconds": 12.94
+    },
+    "invite_hold": {
+      "text": "ごめん、次で降りないと。",
+      "spoken_text": "ごめん、次で降りないと。",
+      "caption": "20代の女性。柔らかく澄んだ中高音の声。落ち着いた声で、少し警戒しながら短く話す。",
+      "seed": 5125,
+      "fingerprint": "054e55215719e298fa999ea4c12bccae10fd96584d85c0eeee8a0e535cb1cfdb",
+      "duration_seconds": 3.16,
+      "generation_seconds": 8.62
+    },
+    "return_shared": {
+      "text": "そっか。お疲れさま。私は練習が長くて。",
+      "spoken_text": "そっか。お疲れさま。私は練習が長くて。",
+      "caption": "20代の女性。柔らかく澄んだ中高音の声。落ち着いた自然な会話の口調で話す。",
+      "seed": 5126,
+      "fingerprint": "e36ca6354a8684fc75a009d855442e33aabfd02afc749e78118c1cd35201f6dd",
+      "duration_seconds": 5.52,
+      "generation_seconds": 13.39
+    },
+    "shoulder_calm": {
+      "text": "どうしたの？",
+      "spoken_text": "どうしたの？",
+      "caption": "20代の女性。柔らかく澄んだ中高音の声。落ち着いた自然な会話の口調で話す。",
+      "seed": 5127,
+      "fingerprint": "693bb9b9f6909af447ff44f7e5c63b7faf09ea93852a63a0cda566e9317cce5d",
+      "duration_seconds": 1.52,
+      "generation_seconds": 5.91
+    },
+    "shoulder_wary": {
+      "text": "聞こえてるよ。",
+      "spoken_text": "聞こえてるよ。",
+      "caption": "20代の女性。柔らかく澄んだ中高音の声。落ち着いた声で、少し警戒しながら短く話す。",
+      "seed": 5128,
+      "fingerprint": "dcb2c1ed8e166e03934298e15c21866e44b74b6b05442da95e0b8b3c0498f278",
+      "duration_seconds": 1.76,
+      "generation_seconds": 6.2
+    }
+  }
+}

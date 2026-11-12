@@ -9,3 +9,17 @@ Changes: excerpt 5–55 seconds, 45Hz high-pass and 2200Hz low-pass,
 2-second circular crossfade, level adjustment, Vorbis encoding; final loop 48 seconds.
 Preparation: tools/prepare_train_recording.py
 The former procedurally synthesized ambience is no longer used.
+
+Natsuki voice (Stage 1)
+Generated locally with Aratako/Irodori-TTS-v4-Large (original FP32 weights).
+https://huggingface.co/Aratako/Irodori-TTS-v4-Large
+Code: https://github.com/Aratako/Irodori-TTS
+Code revision: 382205679ebc32295b7d1bfb329327d04c8f4eed
+Synthetic reference: voice candidate 03, generated with seed 4103.
+No real person's voice recording was used as the reference.
+Runtime: Python 3.11, Apple M4 Pro, MPS; 40 sampling steps.
+SilentCipher watermarking enabled. Peak safety scaling and Vorbis encoding applied.
+Generation script: tools/make_stage1_voices.py
+Generation record: voice-source/stage1-manifest.json (source repository).
+Model terms: https://ai.google.dev/gemma/terms
+Model usage policy: https://ai.google.dev/gemma/prohibited_use_policy

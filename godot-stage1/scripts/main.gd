@@ -65,6 +65,14 @@ var ambient_slider: HSlider
 var ambient_toggle: CheckButton
 var ambient_caption: Label
 var audio_fade: Tween
+var voice_player: AudioStreamPlayer
+var voice_volume: float = 0.8
+var voice_muted: bool = false
+var voice_slider: HSlider
+var voice_toggle: CheckButton
+var voice_caption: Label
+var voice_bus: int = -1
+var current_voice: String = ""
 var player_dialog: Panel
 var player_speaker: Label
 var player_text: Label
@@ -87,8 +95,11 @@ func _ready() -> void:
 		reduce_motion=bool(preferences.get_value("display","reduce_motion",false))
 		ambient_volume=clampf(float(preferences.get_value("audio","train_volume",0.45)),0,1)
 		ambient_muted=bool(preferences.get_value("audio","train_muted",false))
+		voice_volume=clampf(float(preferences.get_value("audio","voice_volume",0.8)),0,1)
+		voice_muted=bool(preferences.get_value("audio","voice_muted",false))
 	build()
 	start_ambience()
+	start_voice()
 	resized.connect(layout)
 	layout()
 	var data = read_save()
@@ -277,6 +288,28 @@ func build() -> void:
 		update_ambience()
 		save_preferences())
 	settings_box.add_child(ambient_toggle)
+	voice_caption=label("ボイス  %d%%" % roundi(voice_volume*100),17)
+	voice_caption.add_theme_color_override("font_color",Color("ededeb"))
+	settings_box.add_child(voice_caption)
+	voice_slider=HSlider.new()
+	voice_slider.min_value=0
+	voice_slider.max_value=100
+	voice_slider.step=1
+	voice_slider.value=voice_volume*100
+	voice_slider.custom_minimum_size=Vector2(300,28)
+	voice_slider.value_changed.connect(func(value):
+		voice_volume=value/100.0
+		update_voice_volume()
+		save_preferences())
+	settings_box.add_child(voice_slider)
+	voice_toggle=CheckButton.new()
+	voice_toggle.text="ボイスをミュート"
+	voice_toggle.button_pressed=voice_muted
+	voice_toggle.toggled.connect(func(on):
+		voice_muted=on
+		update_voice_volume()
+		save_preferences())
+	settings_box.add_child(voice_toggle)
 	settings_box.add_child(button("最初から始める",func(): settings.hide();confirm_restart()))
 	settings.add_child(settings_box)
 	add_child(settings)
@@ -429,15 +462,52 @@ func update_ambience() -> void:
 	ambient_player.volume_db=linear_to_db(maxf(ambient_volume,.001))
 	ambient_player.stream_paused=ambient_muted or ambient_volume<=0
 
+func start_voice() -> void:
+	voice_bus=AudioServer.get_bus_index("Voice")
+	if voice_bus<0:
+		AudioServer.add_bus()
+		voice_bus=AudioServer.bus_count-1
+		AudioServer.set_bus_name(voice_bus,"Voice")
+	voice_player=AudioStreamPlayer.new()
+	voice_player.bus="Voice"
+	add_child(voice_player)
+	update_voice_volume()
+
+func update_voice_volume() -> void:
+	voice_caption.text="ボイス  %d%%" % roundi(voice_volume*100)
+	if not is_instance_valid(voice_player):return
+	voice_player.volume_db=linear_to_db(maxf(voice_volume,.001))
+	AudioServer.set_bus_mute(voice_bus,voice_muted or voice_volume<=0)
+
+func stop_voice() -> void:
+	current_voice=""
+	if is_instance_valid(voice_player):
+		voice_player.stop()
+		voice_player.stream=null
+
+func play_voice(key: String) -> float:
+	stop_voice()
+	var path="res://assets/voice/"+key+".ogg"
+	if not ResourceLoader.exists(path):return 0.0
+	var clip=load(path) as AudioStream
+	if clip==null:return 0.0
+	voice_player.stream=clip
+	current_voice=key
+	voice_player.play()
+	return clip.get_length()
+
 func save_preferences() -> void:
 	var preferences=ConfigFile.new()
 	preferences.set_value("display","card_pinned",card_pinned)
 	preferences.set_value("display","reduce_motion",reduce_motion)
 	preferences.set_value("audio","train_volume",ambient_volume)
 	preferences.set_value("audio","train_muted",ambient_muted)
+	preferences.set_value("audio","voice_volume",voice_volume)
+	preferences.set_value("audio","voice_muted",voice_muted)
 	preferences.save(SETTINGS_PATH)
 
 func _exit_tree() -> void:
+	stop_voice()
 	if is_instance_valid(ambient_player):
 		ambient_player.stop()
 		ambient_player.stream=null
@@ -455,6 +525,7 @@ func perform(action: String) -> void:
 	serial+=1
 	var ticket: int=serial
 	for child in choices.get_children():child.queue_free()
+	stop_voice()
 	if not line.is_empty():
 		player_turn=true
 		bubble.modulate.a=0
@@ -484,6 +555,7 @@ func touch(part: String) -> void:
 			last_reaction_ms=now
 			bubble_text.text="聞こえてるよ。" if state.caution>0 else "どうしたの？"
 			bubble.modulate.a=1
+			play_voice("shoulder_wary" if state.caution>0 else "shoulder_calm")
 		return
 	resume_button.hide()
 	quiet_timer=0
@@ -491,6 +563,7 @@ func touch(part: String) -> void:
 	animate_touch(part,state.last_gesture)
 
 func show_scene(write: bool = true, keep_player: bool = false) -> void:
+	stop_voice()
 	player_turn=false
 	player_dialog.visible=keep_player
 	hint.hide()
@@ -526,8 +599,10 @@ func show_scene(write: bool = true, keep_player: bool = false) -> void:
 	await get_tree().create_timer(0.55).timeout
 	if ticket!=serial:return
 	create_tween().tween_property(bubble,"modulate:a",1.0,.2)
-	# The line stays intact; clicks never advance a typewriter or interrupt it.
-	await get_tree().create_timer(maxf(1.6,scene.line.length()*.055) if state.phase!="recover" else 3.0).timeout
+	var voice_duration=play_voice(state.phase)
+	# Keep the reply visible until its recorded voice finishes.
+	var reading_time=maxf(1.6,scene.line.length()*.055) if state.phase!="recover" else 3.0
+	await get_tree().create_timer(maxf(reading_time,voice_duration+.2)).timeout
 	if ticket!=serial:return
 	busy=false
 	if state.phase=="thanks":set_face("smile")
