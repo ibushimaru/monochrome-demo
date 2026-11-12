@@ -4,6 +4,6 @@ Final prompt:
 Create a background-only illustration for a monochrome Japanese conversation game. Empty contemporary Japanese commuter train interior, viewed nearly straight-on facing the opposite long bench seat across the aisle. Composition landscape 4:3. Coherent realistic carriage construction and restrained, slightly rough hand-drawn linework, flat white/light gray fills, no photoreal shading, no hatching. Clearly readable large rectangular train windows ABOVE the seat back, seat backs physically connected to seat cushions, 5 individual cushion divisions on one continuous bench, solid plinth beneath bench, modest end partition near left edge. Two thin vertical grab poles near far edges, horizontal luggage rack and a few short hanging straps attached correctly at top. Pale static suburban silhouettes outside windows, no motion blur. Camera upright, level, moderate eye height and no wide-angle distortion. Window sill about 45% image height, backrest occupies 48-64%, cushion surface 64-70%, plinth 70-79%, open aisle floor lower 21%. Foreground floor across entire width, visually calm central area where a full-body standing character will be overlaid from top to bottom. Keep center unobstructed by poles, no passengers, no hands, no floating objects, no text, no logos, no UI, no platform, no train exterior. Light gray low-contrast backdrop so dark-clothed character remains prominent. No gratuitous detail. Draw an actual structurally plausible Japanese train interior, not a diagram or collection of rectangles.
 
 環境音: assets/train-ambience.ogg
-オリジナルの手続き的合成。第三者の録音・サンプル・曲は使用していない。
-32秒、44.1kHz、ステレオ、Vorbis。低域の走行音、換気音、モーター成分、弱い継ぎ目音。
-再生成: python3 tools/make_train_ambience.py（numpy・ffmpegを使用）
+旧合成音は使用しない。rucisko "in the train" の実録音（CC0）に差し替え。
+出典・ライセンス・加工内容: AUDIO-CREDITS.txt
+再生成: tools/prepare_train_recording.py

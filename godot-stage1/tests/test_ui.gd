@@ -18,7 +18,7 @@ var failures: Array[String] = []
 func check(ok: bool, message: String) -> void:
 	if not ok: failures.append(message)
 func settle() -> void:
-	await create_timer(5.0).timeout
+	await create_timer(7.0).timeout
 func check_stationary() -> void:
 	var speed=Engine.time_scale
 	Engine.time_scale=1
@@ -44,7 +44,7 @@ func run() -> void:
 	await settle()
 	check(game.wallet.visible and not game.busy, "Opening allows pass interaction")
 	check(not game.backdrop.is_processing(), "Train background remains static")
-	check(game.ambient_player.stream.loop and is_equal_approx(game.ambient_player.stream.get_length(),32.0), "Train ambience loops a full 32-second stream")
+	check(game.ambient_player.stream.loop and is_equal_approx(game.ambient_player.stream.get_length(),48.0), "Recorded train ambience loops a full 48-second stream")
 	game.ambient_slider.value=25
 	game.ambient_toggle.button_pressed=true
 	check(game.ambient_player.stream_paused and game.preferences_saved.muted,"Mute is applied and saved")
@@ -67,8 +67,13 @@ func run() -> void:
 	check(game.settings.size.y<600, "Settings fits desktop window")
 	game.settings.hide()
 	game.wallet.pressed.emit()
+	check(game.player_turn and game.player_dialog.visible and game.player_text.text=="これ、落としましたよ。", "Player speaks before the reply")
+	check(game.state.phase=="intro" and is_zero_approx(game.bubble.modulate.a), "Natsuki reply waits for player line")
+	game.touch("head")
+	check(game.state.phase=="intro", "Touches cannot interrupt player dialogue")
 	await settle()
 	check(game.state.phase=="thanks" and not game.wallet.visible, "Pass triggers thanks")
+	check(not game.player_turn and game.player_dialog.visible,"Player line remains visible beside reply")
 	check(game.body_top.texture.atlas==game.RECEIVE, "Receiving pose shown")
 	check(game.body_bottom.texture.atlas==game.FACES.calm, "Legs remain stable across poses")
 	game.choices.get_child(0).pressed.emit()
@@ -117,6 +122,16 @@ func run() -> void:
 		if game.choices.get_child_count()>0:
 			var last=game.choices.get_child(game.choices.get_child_count()-1)
 			check(game.choices.position.y+last.position.y+last.size.y<game.view_button.position.y,"Choices clear footer: "+phase)
+		for option in game.State.STORY.data[phase].get("choices",[]):
+			check(option.size()==3 and not option[2].is_empty(),"Every action has player dialogue or visible gesture: "+phase)
+			game.player_text.text=option[2]
+			check(game.player_text.get_line_count()*game.FONT.get_height(20)<=game.player_text.size.y,"Player line fits: "+phase+"/"+option[0])
+	game.new_game()
+	await settle()
+	game.perform("pass")
+	game.new_game()
+	await settle()
+	check(game.state.phase=="intro" and not game.player_dialog.visible,"Restart cancels pending dialogue and transition")
 	game.queue_free()
 	await process_frame
 	# Let the audio mixer retire the stopped Ogg playback before engine shutdown.

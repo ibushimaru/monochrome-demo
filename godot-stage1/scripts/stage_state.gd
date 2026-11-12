@@ -115,7 +115,7 @@ func act(action: String) -> bool:
 			go("invite")
 		"hold":
 			caution = mini(3, caution + 1)
-			go("invite")
+			go("invite_hold")
 		"invite":
 			if trust >= 60 and caution <= 1 and flags.get("name", false) and flags.get("schedule", false):
 				flags["stage2_unlocked"] = true
@@ -130,7 +130,9 @@ func act(action: String) -> bool:
 		"return_greet":
 			flags["name"] = true
 			go("return_chat")
-		"share", "return_listen":
+		"share":
+			go("return_shared")
+		"return_listen":
 			go("return_listen")
 		"return_respond":
 			award("return_" + str(ride), 15)

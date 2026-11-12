@@ -1,0 +1,11 @@
+Train ambience
+Original: "in the train" by rucisko
+https://freesound.org/people/rucisko/sounds/164766/
+License: Creative Commons Zero (CC0 1.0)
+https://creativecommons.org/publicdomain/zero/1.0/
+Public HQ preview: https://cdn.freesound.org/previews/164/164766_2978883-hq.mp3
+Retrieved: 2026-11-12
+Changes: excerpt 5–55 seconds, 45Hz high-pass and 2200Hz low-pass,
+2-second circular crossfade, level adjustment, Vorbis encoding; final loop 48 seconds.
+Preparation: tools/prepare_train_recording.py
+The former procedurally synthesized ambience is no longer used.

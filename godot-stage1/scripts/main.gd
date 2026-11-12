@@ -60,6 +60,10 @@ var ambient_slider: HSlider
 var ambient_toggle: CheckButton
 var ambient_caption: Label
 var audio_fade: Tween
+var player_dialog: Panel
+var player_speaker: Label
+var player_text: Label
+var player_turn: bool = false
 const SETTINGS_PATH = "user://stage1-settings.cfg"
 
 func _ready() -> void:
@@ -204,6 +208,16 @@ func build() -> void:
 	hint=label("",17)
 	hint.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
 	shell.add_child(hint)
+	player_dialog=Panel.new()
+	player_dialog.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	player_dialog.add_theme_stylebox_override("panel",box(Color("f3f4ef"),Color("9b9f95"),12))
+	player_speaker=label("あなた",14)
+	player_dialog.add_child(player_speaker)
+	player_text=label("",20)
+	player_text.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+	player_dialog.add_child(player_text)
+	player_dialog.hide()
+	shell.add_child(player_dialog)
 	choices=VBoxContainer.new()
 	choices.add_theme_constant_override("separation",9)
 	shell.add_child(choices)
@@ -259,11 +273,6 @@ func build() -> void:
 		save_preferences())
 	settings_box.add_child(ambient_toggle)
 	settings_box.add_child(button("最初から始める",func(): settings.hide();confirm_restart()))
-	var credits=label("第1ステージ / 夏希と、最初の約束。\nGodot Engine — MIT License\nNoto Sans JP — SIL Open Font License\nキャラクター・素材：AI生成を含む\n進行はこの端末に保存されます。",14)
-	credits.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
-	credits.custom_minimum_size.x=300
-	credits.add_theme_color_override("font_color",Color("ededeb"))
-	settings_box.add_child(credits)
 	settings.add_child(settings_box)
 	add_child(settings)
 	for dialog_button in [settings.get_ok_button(),reset_dialog.get_ok_button(),reset_dialog.get_cancel_button()]:
@@ -317,12 +326,18 @@ func layout() -> void:
 	wallet.size=Vector2(85,60)
 	hint.position=Vector2(24,sh+90)
 	hint.size=Vector2(w-48,60)
+	player_dialog.position=Vector2(24,sh+84)
+	player_dialog.size=Vector2(w-48,64)
+	player_speaker.position=Vector2(14,21)
+	player_speaker.size=Vector2(56,26)
+	player_text.position=Vector2(78,16)
+	player_text.size=Vector2(w-148,48)
 	choices.position=Vector2(24,sh+155)
 	choices.size=Vector2(w-48,170)
 	save_note.position=Vector2(24,h-25)
 	view_button.position=Vector2(w-180,h-56)
 	view_button.size=Vector2(156,40)
-	ending.position=Vector2(24,sh+142)
+	ending.position=Vector2(24,sh+155)
 	ending.size=Vector2(w-48,160)
 
 func start_ambience() -> void:
@@ -358,12 +373,31 @@ func _exit_tree() -> void:
 
 func perform(action: String) -> void:
 	if busy: return
-	if not state.act(action): return
+	var next_state=State.new()
+	if not next_state.restore(state.snapshot()) or not next_state.act(action):return
+	var line: String=state.scene().get("direct_actions",{}).get(action,"")
+	for option in state.scene().get("choices",[]):
+		if option[0]==action and option.size()>2:line=option[2]
 	resume_button.hide()
 	quiet_timer=0
-	show_scene()
+	busy=true
+	serial+=1
+	var ticket: int=serial
+	for child in choices.get_children():child.queue_free()
+	if not line.is_empty():
+		player_turn=true
+		bubble.modulate.a=0
+		hint.hide()
+		player_text.text=line
+		player_dialog.show()
+		await get_tree().create_timer(clampf(line.length()*.06,1.3,2.8)+.25).timeout
+		if ticket!=serial:return
+	player_turn=false
+	state=next_state
+	show_scene(true,not line.is_empty())
 
 func touch(part: String) -> void:
+	if player_turn:return
 	if state.ended(): return
 	var now: int = Time.get_ticks_msec()
 	if now-last_touch_ms<900: return
@@ -385,7 +419,10 @@ func touch(part: String) -> void:
 	show_scene()
 	animate_touch(part,state.last_gesture)
 
-func show_scene(write: bool = true) -> void:
+func show_scene(write: bool = true, keep_player: bool = false) -> void:
+	player_turn=false
+	player_dialog.visible=keep_player
+	hint.visible=not keep_player
 	if tween and tween.is_valid():tween.kill()
 	portrait.position=portrait_home
 	hand.hide()
