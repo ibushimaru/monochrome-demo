@@ -12,6 +12,7 @@ const HALF_BLINK = preload("res://assets/full-halfblink.png")
 const GLANCE = preload("res://assets/full-glance.png")
 const HAND = preload("res://assets/hand.png")
 const POKE = preload("res://assets/poke.png")
+const KNEAD_REGISTRATION = preload("res://data/knead-registration.json")
 const TRAIN_AUDIO = preload("res://assets/train-ambience.ogg")
 const SAVE_PATH = "user://stage1-save.json"
 var state = State.new()
@@ -73,6 +74,13 @@ var voice_toggle: CheckButton
 var voice_caption: Label
 var voice_bus: int = -1
 var current_voice: String = ""
+var shoulder_material: ShaderMaterial
+var shoulder_hand: TextureRect
+var shoulder_folds: TextureRect
+var shoulder_hand_frames: Array[Texture2D]=[]
+var shoulder_held: bool = false
+var shoulder_pressure: float = 0.0
+var shoulder_visibility: float = 0.0
 var player_dialog: Panel
 var player_speaker: Label
 var player_text: Label
@@ -148,7 +156,7 @@ func build() -> void:
 	meter.add_theme_stylebox_override("background",box(Color("e0e4dd"),Color.TRANSPARENT,4))
 	meter.add_theme_stylebox_override("fill",box(Color("6b7b63"),Color.TRANSPARENT,4))
 	shell.add_child(meter)
-	var menu=button("メニュー",func(): game_menu.popup_centered(Vector2i(360,260)))
+	var menu=button("メニュー",func():cancel_shoulder();game_menu.popup_centered(Vector2i(360,260)))
 	menu.name="SettingsButton"
 	shell.add_child(menu)
 	resume_button=button("続きから",resume_game)
@@ -176,6 +184,9 @@ func build() -> void:
 		portrait.add_child(body_piece)
 	body_bottom.texture=atlas(FACES.calm,Rect2(0,.65,1,.35))
 	set_pose(FACES.calm)
+	shoulder_material=ShaderMaterial.new()
+	shoulder_material.shader=load("res://shaders/shoulder_knead.gdshader")
+	body_top.material=shoulder_material
 	face_overlay=TextureRect.new()
 	face_overlay.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
 	face_overlay.stretch_mode=TextureRect.STRETCH_SCALE
@@ -187,15 +198,36 @@ func build() -> void:
 	eye_overlay.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	eye_overlay.hide()
 	portrait.add_child(eye_overlay)
+	shoulder_folds=TextureRect.new()
+	var fold_region: Array=KNEAD_REGISTRATION.data.fold_region
+	var fold_atlas=AtlasTexture.new()
+	fold_atlas.atlas=load("res://assets/shoulder-folds-v1.png")
+	fold_atlas.region=Rect2(fold_region[0],fold_region[1],fold_region[2],fold_region[3])
+	shoulder_folds.texture=fold_atlas
+	shoulder_hand=TextureRect.new()
+	for frame_name in ["contact","half","pressed"]:
+		shoulder_hand_frames.append(load("res://assets/knead-hand-"+frame_name+"-v1.png"))
+	shoulder_hand.texture=shoulder_hand_frames[0]
+	for layer in [shoulder_folds,shoulder_hand]:
+		layer.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
+		layer.stretch_mode=TextureRect.STRETCH_SCALE
+		layer.texture_filter=CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+		layer.mouse_filter=Control.MOUSE_FILTER_IGNORE
+		layer.hide()
+		portrait.add_child(layer)
 	for part in ["head","cheek","shoulder"]:
 		var zone = Button.new()
 		zone.name=part
 		zone.flat=true
 		zone.mouse_default_cursor_shape=Control.CURSOR_POINTING_HAND
-		zone.tooltip_text={"head":"頭に手を伸ばす","cheek":"頬に手を伸ばす","shoulder":"肩に呼びかける"}[part]
+		zone.tooltip_text={"head":"頭に手を伸ばす","cheek":"頬に手を伸ばす","shoulder":"押して肩を揉む・離して力を抜く"}[part]
 		for style in ["normal","hover","pressed"]:
 			zone.add_theme_stylebox_override(style,StyleBoxEmpty.new())
-		zone.pressed.connect(func(): touch(part))
+		if part=="shoulder":
+			zone.button_down.connect(begin_shoulder)
+			zone.button_up.connect(release_shoulder)
+		else:
+			zone.pressed.connect(func(): touch(part))
 		stage.add_child(zone)
 	hand=TextureRect.new()
 	hand.texture=HAND
@@ -414,7 +446,10 @@ func layout() -> void:
 	face_overlay.size=Vector2(pw*.33,ph*.10)
 	eye_overlay.position=Vector2(pw*.39,ph*.105)
 	eye_overlay.size=Vector2(pw*.20,ph*.027)
-	var zones={"head":Rect2(.32,.025,.32,.075),"cheek":Rect2(.36,.10,.28,.075),"shoulder":Rect2(.22,.20,.55,.075)}
+	shoulder_folds.position=Vector2(pw*.60,ph*.219)
+	shoulder_folds.size=Vector2(pw*.12,ph*.045)
+	position_shoulder_hand(0)
+	var zones={"head":Rect2(.32,.025,.32,.075),"cheek":Rect2(.36,.10,.28,.075),"shoulder":Rect2(.58,.19,.16,.095)}
 	for part in zones:
 		var rect: Rect2 = zones[part]
 		var zone: Control = stage.get_node(part)
@@ -514,6 +549,7 @@ func _exit_tree() -> void:
 
 func perform(action: String) -> void:
 	if busy: return
+	cancel_shoulder()
 	var next_state=State.new()
 	if not next_state.restore(state.snapshot()) or not next_state.act(action):return
 	var line: String=state.scene().get("direct_actions",{}).get(action,"")
@@ -563,6 +599,7 @@ func touch(part: String) -> void:
 	animate_touch(part,state.last_gesture)
 
 func show_scene(write: bool = true, keep_player: bool = false) -> void:
+	cancel_shoulder()
 	stop_voice()
 	player_turn=false
 	player_dialog.visible=keep_player
@@ -658,6 +695,8 @@ func update_blink(delta: float) -> void:
 			eye_overlay.show()
 
 func animate_touch(part: String, gesture: String) -> void:
+	if part=="shoulder":return
+	cancel_shoulder()
 	if tween and tween.is_valid():tween.kill()
 	portrait.position=portrait_home
 	hand.texture=POKE if part=="cheek" else HAND
@@ -690,7 +729,58 @@ func show_ending() -> void:
 	ending.add_child(content)
 	ending.show()
 
+func begin_shoulder() -> void:
+	if player_turn or state.ended() or state.phase in ["withdraw","block","recover"]:return
+	# Story reactions keep their existing cooldown; the physical gesture follows input.
+	if not busy:touch("shoulder")
+	shoulder_held=true
+	if tween and tween.is_valid():tween.kill()
+	hand.hide()
+
+func release_shoulder() -> void:
+	shoulder_held=false
+
+func cancel_shoulder() -> void:
+	shoulder_held=false
+	shoulder_pressure=0.0
+	shoulder_visibility=0.0
+	if is_instance_valid(shoulder_material):
+		shoulder_material.set_shader_parameter("pressure",0.0)
+	if is_instance_valid(shoulder_hand):shoulder_hand.hide()
+	if is_instance_valid(shoulder_folds):shoulder_folds.hide()
+
+func update_shoulder(delta: float) -> void:
+	if not is_instance_valid(shoulder_material):return
+	shoulder_pressure=(1.0 if shoulder_held else 0.0) if reduce_motion else move_toward(shoulder_pressure,1.0 if shoulder_held else 0.0,delta/(.22 if shoulder_held else .28))
+	var visible_target=1.0 if shoulder_held or shoulder_pressure>0.0 else 0.0
+	shoulder_visibility=move_toward(shoulder_visibility,visible_target,delta/.08)
+	shoulder_material.set_shader_parameter("pressure",shoulder_pressure)
+	shoulder_hand.visible=shoulder_visibility>0.0
+	shoulder_hand.modulate.a=shoulder_visibility
+	position_shoulder_hand(2 if shoulder_pressure>=.75 else 1 if shoulder_pressure>=.3 else 0)
+	shoulder_folds.visible=shoulder_visibility>0.0
+	shoulder_folds.modulate.a=shoulder_pressure*shoulder_visibility*.8
+
+func position_shoulder_hand(frame: int) -> void:
+	var frame_name=["contact","half","pressed"][frame]
+	var registration: Dictionary=KNEAD_REGISTRATION.data[frame_name]
+	var sprite_scale=portrait.size.y*.020/float(registration.wrist_height)
+	var anchor=Vector2(registration.wrist_anchor[0],registration.wrist_anchor[1])
+	shoulder_hand.texture=shoulder_hand_frames[frame]
+	shoulder_hand.size=Vector2(registration.size[0],registration.size[1])*sprite_scale
+	shoulder_hand.position=portrait.size*Vector2(.755,.215)-anchor*sprite_scale
+
+func _input(event: InputEvent) -> void:
+	# Release even if the pointer leaves the shoulder or the window.
+	if event is InputEventMouseButton and event.button_index==MOUSE_BUTTON_LEFT and not event.pressed:
+		release_shoulder()
+
+func _notification(what: int) -> void:
+	if what==NOTIFICATION_APPLICATION_FOCUS_OUT:
+		cancel_shoulder()
+
 func _process(delta: float) -> void:
+	update_shoulder(delta)
 	update_blink(delta)
 	if busy or state.ended():return
 	quiet_timer+=delta

@@ -1,0 +1,41 @@
+{
+  "contact": {
+    "size": [
+      1774,
+      887
+    ],
+    "wrist_anchor": [
+      1595,
+      411.0
+    ],
+    "wrist_height": 306
+  },
+  "half": {
+    "size": [
+      1774,
+      887
+    ],
+    "wrist_anchor": [
+      1599,
+      410.0
+    ],
+    "wrist_height": 308
+  },
+  "pressed": {
+    "size": [
+      1774,
+      887
+    ],
+    "wrist_anchor": [
+      1598,
+      411.0
+    ],
+    "wrist_height": 304
+  },
+  "fold_region": [
+    389,
+    442,
+    472,
+    300
+  ]
+}

@@ -1,0 +1,31 @@
+Shoulder kneading prototype — separate runtime layers
+
+Final assets (built-in image_gen; no CLI generation):
+assets/knead-hand-contact-v1.png — isolated relaxed hand
+assets/knead-hand-half-v1.png — isolated half-flexed hand
+assets/knead-hand-pressed-v1.png — isolated flexed hand
+assets/shoulder-folds-v1.png — isolated fabric fold overlay
+
+The character illustration remains assets/full-calm.png and existing pose/face layers.
+The hand is an independent TextureRect. Its three poses share a registered wrist anchor
+(data/knead-registration.json). Cloth folds are a separate TextureRect with pressure-driven
+opacity. shaders/shoulder_knead.gdshader deforms only the existing shoulder cloth locally.
+No generated full-body composite is used by this feature. Initial combined drafts were rejected.
+
+Final prompt set:
+
+CONTACT HAND
+Use case: background-extraction. Make a standalone game animation HAND SPRITE ONLY by extracting and enlarging the single pale hand resting on the viewer-right shoulder of the reference. Do NOT include any woman, face, body, jacket, cloth, background or contact surface. Only one bare hand with a short bare wrist enters horizontally from the right; fingers pointing downward-left and gently curved in the same relaxed contact pose as reference. Same minimal monochrome illustration style, flat pale gray fill, very thin subdued outline, very few internal lines, no veins, no detailed knuckles/nails, no sleeve or cuff. Anatomically correct hand: fingers overlap naturally, thumb may be obscured, never extra fingers. Isolate on genuine transparent background. Canvas 1024x512 landscape. Place the wrist cut at x940, centered vertically around y250; hand/fingers mostly between x120 and x700, preserve generous transparent border. This is the RELAXED/contact hand pose for an ordinary shoulder massage. The image must contain ONLY the hand and wrist, as an independently compositable layer. No text.
+
+HALF-FLEXED HAND
+Edit this isolated hand sprite into a HALF-BENT finger pose for an animation of kneading a shoulder. Keep EXACT same landscape canvas, same hand scale, palm location and wrist cut location. Only articulate the fingers: bend the middle joints moderately downward, not fully curled, halfway from the relaxed reference toward grasping an imaginary rounded shoulder. Finger lengths remain anatomically correct. Do not translate, rotate, or scale the whole hand. Right half of palm and wrist stays in place. Preserve simple flat pale gray monochrome illustration, thin subdued outline, very few internal lines, no sleeve/cuff, no veins or skin detail, no detailed nails. Only one independent hand/wrist sprite on genuine transparent background. No character, clothing, surface or other object. No text.
+
+FLEXED HAND
+Edit this isolated hand sprite into the strongly bent-finger squeezing pose for kneading a shoulder. Keep EXACT same landscape canvas, same hand scale, same palm position and exact wrist cut location. Only articulate the fingers at their existing knuckles: curl all four fingers downward/inward around an imaginary rounded shoulder, shortening their projected extension toward the left; fingertips wrap under the far slope with clearly bent middle joints. Show a small opposing thumb only where anatomically appropriate, never extra fingers. Keep bone lengths plausible. Do not slide, rotate or scale the entire hand. Keep the wrist/right-hand half unchanged. Preserve same very simple pale gray monochrome illustration, thin soft outline, minimal internal lines, no sleeve, no cuff, no veins, no detailed nails. Output ONLY one bare hand/wrist on true transparent background, no woman or cloth or surface or other objects. This is an independent animation sprite, not a finished composite illustration.
+
+FOLD OVERLAY
+Use case: background-extraction. Create a standalone transparent FABRIC FOLD SHADOW OVERLAY for this game's black blazer shoulder. ONLY 3 or 4 short tapered charcoal crease/shadow strokes and subtle gray ridges where fingers pinch cloth; no hand, no person, no jacket silhouette, no collar/piping, no solid background or fabric base. It will be composited on the EXISTING blazer, so all space between the crease strokes must be transparent. The fold pattern gathers toward an implied pressure point near the upper-right of the small patch and fans gently down-left, like modest folds under fingertips kneading a clothed shoulder. Sparse rough monochrome 2D illustration, not detailed realistic fabric. Make 512x512 transparent asset with all strokes in the central 60 percent of the canvas, no text or labels. The reference is only for style and the shoulder's crease direction; do NOT reproduce the complete character image.
+
+Actual generated dimensions: hand poses 1774x887; fold overlay 1280x1280.
+Registration reads alpha geometry without rewriting raster artwork.
+PNG transparency is preserved. Godot mipmaps prevent aliasing at game display size.
