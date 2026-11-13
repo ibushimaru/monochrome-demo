@@ -82,6 +82,14 @@ var shoulder_held: bool = false
 var shoulder_pressure: float = 0.0
 var shoulder_visibility: float = 0.0
 var shoulder_contact_time: float = 0.0
+var active_hand: int = 0
+var contacts: Array[String] = ["", ""]
+var contact_frames: Array[int] = [0, 0]
+var contact_sprites: Array[TextureRect] = []
+var hand_buttons: Array[Button] = []
+var reset_hands: Button
+const CONTACT_POINTS = {"head":Vector2(.50,.045), "cheek":Vector2(.53,.135), "shoulder":Vector2(.65,.225), "arm_left":Vector2(.31,.37), "arm_right":Vector2(.70,.37), "hand_left":Vector2(.27,.535), "hand_right":Vector2(.74,.535), "waist":Vector2(.54,.405)}
+const CONTACT_NAMES = {"":"", "head":"頭", "cheek":"頬", "shoulder":"肩", "arm_left":"腕", "arm_right":"腕", "hand_left":"手", "hand_right":"手", "waist":"腰"}
 var player_dialog: Panel
 var player_speaker: Label
 var player_text: Label
@@ -157,7 +165,7 @@ func build() -> void:
 	meter.add_theme_stylebox_override("background",box(Color("e0e4dd"),Color.TRANSPARENT,4))
 	meter.add_theme_stylebox_override("fill",box(Color("6b7b63"),Color.TRANSPARENT,4))
 	shell.add_child(meter)
-	var menu=button("メニュー",func():cancel_shoulder();game_menu.popup_centered(Vector2i(360,260)))
+	var menu=button("メニュー",func():game_menu.popup_centered(Vector2i(360,260)))
 	menu.name="SettingsButton"
 	shell.add_child(menu)
 	resume_button=button("続きから",resume_game)
@@ -187,7 +195,8 @@ func build() -> void:
 	set_pose(FACES.calm)
 	shoulder_material=ShaderMaterial.new()
 	shoulder_material.shader=load("res://shaders/shoulder_knead.gdshader")
-	body_top.material=shoulder_material
+	# Cloth animation is disabled until illustrated deformation assets are ready.
+	body_top.material=null
 	face_overlay=TextureRect.new()
 	face_overlay.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
 	face_overlay.stretch_mode=TextureRect.STRETCH_SCALE
@@ -216,18 +225,32 @@ func build() -> void:
 		layer.mouse_filter=Control.MOUSE_FILTER_IGNORE
 		layer.hide()
 		portrait.add_child(layer)
-	for part in ["head","cheek","shoulder"]:
+	for side in range(2):
+		var sprite=TextureRect.new()
+		sprite.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
+		sprite.stretch_mode=TextureRect.STRETCH_SCALE
+		sprite.texture_filter=CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+		sprite.mouse_filter=Control.MOUSE_FILTER_IGNORE
+		sprite.hide()
+		portrait.add_child(sprite)
+		contact_sprites.append(sprite)
+		var selector=button("左手" if side==0 else "右手",func():select_hand(side))
+		selector.toggle_mode=true
+		hand_buttons.append(selector)
+		shell.add_child(selector)
+	reset_hands=button("リセット",cancel_shoulder)
+	shell.add_child(reset_hands)
+	for part in ["head","cheek","shoulder","arm_left","arm_right","hand_left","hand_right","waist"]:
 		var zone = Button.new()
 		zone.name=part
 		zone.flat=true
 		zone.mouse_default_cursor_shape=Control.CURSOR_POINTING_HAND
 		for style in ["normal","hover","pressed"]:
 			zone.add_theme_stylebox_override(style,StyleBoxEmpty.new())
-		if part=="shoulder":
-			zone.button_down.connect(begin_shoulder)
-			zone.button_up.connect(release_shoulder)
-		else:
-			zone.pressed.connect(func(): touch(part))
+		zone.gui_input.connect(func(event: InputEvent):
+			if event is InputEventMouseButton and event.pressed and event.button_index in [MOUSE_BUTTON_LEFT,MOUSE_BUTTON_RIGHT]:
+				contact_click(part,1 if event.button_index==MOUSE_BUTTON_RIGHT else active_hand)
+				zone.accept_event())
 		stage.add_child(zone)
 	hand=TextureRect.new()
 	hand.texture=HAND
@@ -446,8 +469,13 @@ func layout() -> void:
 	eye_overlay.size=Vector2(pw*.20,ph*.027)
 	shoulder_folds.position=Vector2(pw*.60,ph*.219)
 	shoulder_folds.size=Vector2(pw*.12,ph*.045)
-	position_shoulder_hand(0)
-	var zones={"head":Rect2(.32,.025,.32,.075),"cheek":Rect2(.36,.10,.28,.075),"shoulder":Rect2(.58,.19,.16,.095)}
+	for side in range(hand_buttons.size()):
+		hand_buttons[side].position=Vector2(16+side*126,h-55)
+		hand_buttons[side].size=Vector2(120,44)
+	reset_hands.position=Vector2(272,h-55)
+	reset_hands.size=Vector2(100,44)
+	refresh_contacts()
+	var zones={"head":Rect2(.32,.025,.32,.075),"cheek":Rect2(.36,.10,.28,.075),"shoulder":Rect2(.58,.19,.16,.095),"arm_left":Rect2(.25,.30,.13,.18),"arm_right":Rect2(.64,.30,.13,.18),"hand_left":Rect2(.20,.49,.14,.09),"hand_right":Rect2(.68,.49,.14,.09),"waist":Rect2(.39,.38,.22,.075)}
 	for part in zones:
 		var rect: Rect2 = zones[part]
 		var zone: Control = stage.get_node(part)
@@ -470,7 +498,7 @@ func layout() -> void:
 	player_text.size=Vector2(w-148,48)
 	choices.position=Vector2(24,sh+155)
 	choices.size=Vector2(w-48,170)
-	save_note.position=Vector2(24,h-25)
+	save_note.position=Vector2(24,h-78)
 	view_button.position=Vector2(w-180,h-56)
 	view_button.size=Vector2(156,40)
 	ending.position=Vector2(24,sh+155)
@@ -547,7 +575,6 @@ func _exit_tree() -> void:
 
 func perform(action: String) -> void:
 	if busy: return
-	cancel_shoulder()
 	var next_state=State.new()
 	if not next_state.restore(state.snapshot()) or not next_state.act(action):return
 	var line: String=state.scene().get("direct_actions",{}).get(action,"")
@@ -597,7 +624,6 @@ func touch(part: String) -> void:
 	animate_touch(part,state.last_gesture)
 
 func show_scene(write: bool = true, keep_player: bool = false) -> void:
-	cancel_shoulder()
 	stop_voice()
 	player_turn=false
 	player_dialog.visible=keep_player
@@ -692,24 +718,9 @@ func update_blink(delta: float) -> void:
 			eye_overlay.texture=atlas(HALF_BLINK,Rect2(.39,.105,.20,.027))
 			eye_overlay.show()
 
-func animate_touch(part: String, gesture: String) -> void:
-	if part=="shoulder":return
-	cancel_shoulder()
-	if tween and tween.is_valid():tween.kill()
-	portrait.position=portrait_home
-	hand.texture=POKE if part=="cheek" else HAND
-	hand.size=Vector2(portrait.size.x*.28,portrait.size.x*.12)
-	hand.position=portrait_home+portrait.size*Vector2(.50,.04 if part=="head" else .12 if part=="cheek" else .22)
-	hand.modulate=Color.WHITE
-	hand.show()
-	tween=create_tween()
-	if gesture in ["withdraw","block","swat"]:
-		tween.tween_interval(.55)
-		tween.tween_property(hand,"modulate:a",0.0,.30)
-	else:
-		tween.tween_interval(.5)
-		tween.tween_property(hand,"modulate:a",0.0,.2)
-	tween.tween_callback(hand.hide)
+func animate_touch(_part: String, _gesture: String) -> void:
+	# Contact sprites are controlled exclusively by explicit clicks.
+	pass
 
 func show_ending() -> void:
 	if state.phase=="rejected":portrait.modulate.a=0
@@ -728,60 +739,59 @@ func show_ending() -> void:
 	ending.add_child(content)
 	ending.show()
 
-func begin_shoulder() -> void:
-	if player_turn or state.ended() or state.phase in ["withdraw","block","recover"]:return
-	# Story reactions keep their existing cooldown; the physical gesture follows input.
-	if not busy:touch("shoulder")
-	shoulder_held=true
-	shoulder_contact_time=.65
-	if tween and tween.is_valid():tween.kill()
-	hand.hide()
+func select_hand(side: int) -> void:
+	active_hand=side
+	refresh_contacts()
 
-func release_shoulder() -> void:
-	shoulder_held=false
+func contact_click(part: String, side: int) -> void:
+	if player_turn or state.ended() or state.phase in ["withdraw","block","recover"]:return
+	# Each hand has one assignment; an occupied target cannot create a third hand.
+	if contacts[1-side]==part:return
+	contact_frames[side]=1-contact_frames[side] if contacts[side]==part else 0
+	contacts[side]=part
+	if not busy and part in ["head","cheek","shoulder"]:
+		touch(part)
+		if state.phase in ["withdraw","block","rejected"]:
+			contacts[side]=""
+	refresh_contacts()
 
 func cancel_shoulder() -> void:
-	shoulder_contact_time=0.0
+	contacts.assign(["", ""])
+	contact_frames.assign([0, 0])
 	shoulder_held=false
 	shoulder_pressure=0.0
 	shoulder_visibility=0.0
-	if is_instance_valid(shoulder_material):
-		shoulder_material.set_shader_parameter("pressure",0.0)
 	if is_instance_valid(shoulder_hand):shoulder_hand.hide()
 	if is_instance_valid(shoulder_folds):shoulder_folds.hide()
+	refresh_contacts()
 
-func update_shoulder(delta: float) -> void:
-	if not is_instance_valid(shoulder_material):return
-	# A short click completes one visible squeeze; holding extends the contact.
-	var pressing=shoulder_held or shoulder_contact_time>0.0
-	shoulder_contact_time=maxf(0.0,shoulder_contact_time-delta)
-	shoulder_pressure=(1.0 if pressing else 0.0) if reduce_motion else move_toward(shoulder_pressure,1.0 if pressing else 0.0,delta/(.22 if pressing else .35))
-	var visible_target=1.0 if pressing or shoulder_pressure>0.0 else 0.0
-	shoulder_visibility=move_toward(shoulder_visibility,visible_target,delta/.08)
-	shoulder_material.set_shader_parameter("pressure",shoulder_pressure)
-	shoulder_hand.visible=shoulder_visibility>0.0
-	shoulder_hand.modulate.a=shoulder_visibility
-	position_shoulder_hand(2 if shoulder_pressure>=.75 else 1 if shoulder_pressure>=.3 else 0)
-	shoulder_folds.visible=shoulder_visibility>0.0
-	shoulder_folds.modulate.a=shoulder_pressure*shoulder_visibility*.8
+func refresh_contacts() -> void:
+	for side in range(contact_sprites.size()):
+		var sprite=contact_sprites[side]
+		var part=contacts[side]
+		sprite.visible=not part.is_empty()
+		hand_buttons[side].set_pressed_no_signal(active_hand==side)
+		hand_buttons[side].text=("左手" if side==0 else "右手")+(" · "+CONTACT_NAMES[part] if part!="" else "")
+		if part.is_empty():continue
+		var frame=contact_frames[side]*2
+		var registration: Dictionary=KNEAD_REGISTRATION.data[["contact","half","pressed"][frame]]
+		var sprite_scale=portrait.size.y*.020/float(registration.wrist_height)
+		sprite.texture=shoulder_hand_frames[frame]
+		sprite.size=Vector2(registration.size[0],registration.size[1])*sprite_scale
+		sprite.flip_h=side==0
+		# Mirror the contact point as well as the art, so both hands meet their target.
+		var grip=Vector2(.38 if side==1 else .62,.65)*sprite.size
+		sprite.position=portrait.size*CONTACT_POINTS[part]-grip
+	if is_instance_valid(reset_hands):reset_hands.disabled=contacts[0]=="" and contacts[1]==""
 
-func position_shoulder_hand(frame: int) -> void:
-	var frame_name=["contact","half","pressed"][frame]
-	var registration: Dictionary=KNEAD_REGISTRATION.data[frame_name]
-	var sprite_scale=portrait.size.y*.020/float(registration.wrist_height)
-	var anchor=Vector2(registration.wrist_anchor[0],registration.wrist_anchor[1])
-	shoulder_hand.texture=shoulder_hand_frames[frame]
-	shoulder_hand.size=Vector2(registration.size[0],registration.size[1])*sprite_scale
-	shoulder_hand.position=portrait.size*Vector2(.755,.215)-anchor*sprite_scale
+func begin_shoulder() -> void:
+	contact_click("shoulder",active_hand)
 
-func _input(event: InputEvent) -> void:
-	# Release even if the pointer leaves the shoulder or the window.
-	if event is InputEventMouseButton and event.button_index==MOUSE_BUTTON_LEFT and not event.pressed:
-		release_shoulder()
+func release_shoulder() -> void:
+	pass
 
-func _notification(what: int) -> void:
-	if what==NOTIFICATION_APPLICATION_FOCUS_OUT:
-		cancel_shoulder()
+func update_shoulder(_delta: float) -> void:
+	pass
 
 func _process(delta: float) -> void:
 	update_shoulder(delta)
@@ -814,11 +824,13 @@ func read_save() -> Dictionary:
 func resume_game() -> void:
 	var data=read_save()
 	if state.restore(data):
+		cancel_shoulder()
 		resume_button.hide()
 		game_menu.hide()
 		show_scene(false)
 
 func new_game() -> void:
+	cancel_shoulder()
 	serial+=1
 	if tween and tween.is_valid():tween.kill()
 	hand.hide()

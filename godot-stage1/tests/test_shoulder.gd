@@ -1,93 +1,67 @@
 extends SceneTree
-
 class TestGame extends "res://scripts/main.gd":
-	func save_game() -> void:pass
-	func read_save() -> Dictionary:return {}
-	func save_preferences() -> void:pass
-
+ func save_game() -> void:pass
+ func read_save() -> Dictionary:return {}
+ func save_preferences() -> void:pass
 var failures: Array[String]=[]
 func check(ok: bool, message: String) -> void:
-	if not ok:failures.append(message)
+ if not ok:failures.append(message)
 func _initialize() -> void:call_deferred("run")
+func click_zone(game, part: String, mouse: int) -> void:
+ var event=InputEventMouseButton.new()
+ event.button_index=mouse
+ event.pressed=true
+ game.stage.get_node(part).gui_input.emit(event)
+ event.pressed=false
+ game.stage.get_node(part).gui_input.emit(event)
 func run() -> void:
-	var game=TestGame.new()
-	game.size=Vector2(960,1000)
-	root.add_child(game)
-	await process_frame
-	game.set_process(false)
-	game.reduce_motion=false
-	game.busy=false
-	var home=game.portrait.position
-	var original_body=game.body_top.texture
-	var original_face=game.face_overlay.texture
-	var zone=game.stage.get_node("shoulder") as Button
-	zone.button_down.emit()
-	check(game.shoulder_held,"Shoulder press begins kneading")
-	game.update_shoulder(.08)
-	check(game.shoulder_pressure>0 and game.shoulder_pressure<.75,"Press passes through intermediate pose")
-	game.update_shoulder(.2)
-	check(is_equal_approx(game.shoulder_pressure,1.0),"Holding reaches compressed pose")
-	check(game.portrait.position==home,"Kneading never translates the standing sprite")
-	check(not game.hand.visible,"Old sliding hand is not used for shoulders")
-	check(game.shoulder_hand.visible and game.shoulder_folds.visible,"Hand and fold overlays are independent visible layers")
-	check(game.body_top.texture.atlas==original_body.atlas and game.body_top.texture.region==original_body.region,"Kneading does not swap the body illustration")
-	check(game.face_overlay.texture==original_face or game.state.phase=="noticed","Only story reaction may change the face")
-	var registered_anchor=game.portrait.size*Vector2(.755,.215)
-	for frame in range(3):
-		game.position_shoulder_hand(frame)
-		var key=["contact","half","pressed"][frame]
-		var info=game.KNEAD_REGISTRATION.data[key]
-		var scale=game.shoulder_hand.size.x/float(info.size[0])
-		var anchor=game.shoulder_hand.position+Vector2(info.wrist_anchor[0],info.wrist_anchor[1])*scale
-		check(anchor.is_equal_approx(registered_anchor),"Hand pose keeps the wrist planted")
-	var count=game.state.shoulder_count
-	game.update_shoulder(2.0)
-	check(game.state.shoulder_count==count,"Holding does not repeatedly advance the story or trigger voice")
-	var release=InputEventMouseButton.new()
-	release.button_index=MOUSE_BUTTON_LEFT
-	release.pressed=false
-	game._input(release)
-	game.update_shoulder(.14)
-	check(game.shoulder_pressure>0 and game.shoulder_pressure<1,"Release relaxes through intermediate pose")
-	game.update_shoulder(.3)
-	check(is_zero_approx(game.shoulder_visibility),"Release outside target removes hand and folds")
-	game.busy=false
-	game.begin_shoulder()
-	game.release_shoulder()
-	game.update_shoulder(.016)
-	game.update_shoulder(.22)
-	check(game.shoulder_pressure>.99 and game.shoulder_folds.modulate.a>0.5,"Quick click reaches visible compressed cloth instead of flashing away")
-	game.update_shoulder(.42)
-	game.update_shoulder(.4)
-	game.update_shoulder(.1)
-	check(is_zero_approx(game.shoulder_visibility),"Quick click completes and clears without another input")
-	for part in ["head","cheek","shoulder"]:
-		check(game.stage.get_node(part).tooltip_text.is_empty(),"Touch zones have no explanatory tooltips")
-	game.shoulder_held=true
-	game.update_shoulder(.3)
-	game._notification(Control.NOTIFICATION_APPLICATION_FOCUS_OUT)
-	check(not game.shoulder_held and is_zero_approx(game.shoulder_visibility),"Focus loss cancels kneading")
-	game.state.phase="withdraw"
-	game.begin_shoulder()
-	check(not game.shoulder_held,"Kneading cannot replace an active refusal")
-	game.state.phase="question"
-	game.player_turn=true
-	game.begin_shoulder()
-	check(not game.shoulder_held,"Player speech cannot be interrupted by kneading")
-	game.player_turn=false
-	game.begin_shoulder()
-	game.update_shoulder(.3)
-	game.show_scene(false)
-	check(not game.shoulder_held and is_zero_approx(game.shoulder_visibility),"Scene transition clears shoulder patch")
-	game.close_view=true
-	game.layout()
-	var normalized=Rect2((zone.position-game.portrait_home)/game.portrait.size,zone.size/game.portrait.size)
-	check(normalized.is_equal_approx(Rect2(.58,.19,.16,.095)),"Shoulder hit target follows close view")
-	await create_timer(4.0).timeout
-	game.queue_free()
-	await process_frame
-	await create_timer(.2).timeout
-	if failures.is_empty():print("PASS: shoulder press/release, stationary portrait, global release, focus, dialogue cancellation and zoom")
-	else:
-		for failure in failures:push_error(failure)
-	quit(0 if failures.is_empty() else 1)
+ var game=TestGame.new()
+ game.size=Vector2(960,1000)
+ root.add_child(game)
+ await create_timer(4).timeout
+ game.set_process(false)
+ game.busy=false
+ var home=game.portrait.position
+ click_zone(game,"shoulder",MOUSE_BUTTON_LEFT)
+ click_zone(game,"arm_left",MOUSE_BUTTON_RIGHT)
+ check(game.contacts==["shoulder","arm_left"],"Two independent hands occupy two targets")
+ var positions=[game.contact_sprites[0].position,game.contact_sprites[1].position]
+ var textures=[game.contact_sprites[0].texture,game.contact_sprites[1].texture]
+ await create_timer(4).timeout
+ check(game.contacts==["shoulder","arm_left"] and game.contact_sprites[0].visible and game.contact_sprites[1].visible,"Release and idle never remove either hand")
+ check(game.contact_sprites[0].position==positions[0] and game.contact_sprites[1].position==positions[1],"Hands never move automatically")
+ click_zone(game,"shoulder",MOUSE_BUTTON_LEFT)
+ check(game.contact_sprites[0].texture!=textures[0] and game.contact_sprites[1].texture==textures[1],"Click articulates only selected hand")
+ click_zone(game,"arm_left",MOUSE_BUTTON_LEFT)
+ check(game.contacts==["shoulder","arm_left"],"Occupied target does not duplicate or steal a hand")
+ click_zone(game,"arm_right",MOUSE_BUTTON_LEFT)
+ check(game.contacts==["arm_right","arm_left"],"Moving one hand preserves the other")
+ game.show_scene(false)
+ check(game.contacts==["arm_right","arm_left"],"Dialogue refresh preserves contact")
+ check(game.body_top.material==null and not game.shoulder_folds.visible,"Cloth overlay and deformation are disabled")
+ game.close_view=true
+ game.layout()
+ check(game.contact_sprites[0].visible and game.contact_sprites[1].visible,"Zoom preserves both contacts")
+ game.busy=false
+ game.last_touch_ms=-10000
+ click_zone(game,"head",MOUSE_BUTTON_LEFT)
+ check(game.contacts==["","arm_left"],"Refusal releases only the rejected hand")
+ game.reset_hands.pressed.emit()
+ check(game.contacts==["",""] and not game.contact_sprites[0].visible and not game.contact_sprites[1].visible,"Reset releases both hands")
+ for part in ["head","cheek","shoulder","arm_left","arm_right","hand_left","hand_right","waist"]:
+  check(game.stage.get_node(part).tooltip_text.is_empty(),"No touch tooltips")
+ game.state.phase="question"
+ game.busy=false
+ click_zone(game,"hand_left",MOUSE_BUTTON_LEFT)
+ click_zone(game,"waist",MOUSE_BUTTON_RIGHT)
+ check(game.contacts==["hand_left","waist"],"Hand and waist use the same two-slot ownership")
+ click_zone(game,"hand_right",MOUSE_BUTTON_LEFT)
+ check(game.contacts==["hand_right","waist"],"Either character hand can be selected independently of waist")
+ await create_timer(12).timeout
+ game.queue_free()
+ await process_frame
+ await create_timer(.2).timeout
+ if failures.is_empty():print("PASS: two-hand ownership, click articulation, idle persistence, refusal, reset, zoom and no cloth effects")
+ else:
+  for failure in failures:push_error(failure)
+ quit(0 if failures.is_empty() else 1)
