@@ -21,6 +21,15 @@ func run() -> void:
  await create_timer(4).timeout
  game.set_process(false)
  game.busy=false
+ # Regression: two ordinary left clicks must leave both shoulders occupied.
+ click_zone(game,"shoulder_right",MOUSE_BUTTON_LEFT)
+ click_zone(game,"shoulder_left",MOUSE_BUTTON_LEFT)
+ check(game.contacts==["shoulder_right","shoulder_left"],"Two normal clicks allocate left AND right hands to both shoulders")
+ check(game.contact_sprites[0].visible and game.contact_sprites[1].visible,"Both shoulder hands are visible at once")
+ var left_frame=game.contact_frames[0]
+ click_zone(game,"shoulder_left",MOUSE_BUTTON_LEFT)
+ check(game.contacts==["shoulder_right","shoulder_left"] and game.contact_frames[0]==left_frame and game.contact_frames[1]==1,"Reclick moves only the hand already on that shoulder")
+ game.cancel_shoulder()
  var home=game.portrait.position
  click_zone(game,"shoulder_left",MOUSE_BUTTON_LEFT)
  click_zone(game,"arm_left",MOUSE_BUTTON_RIGHT)

@@ -12,8 +12,8 @@ func run() -> void:
  await create_timer(4).timeout
  game.close_view=true
  game.layout()
- game.contact_click("shoulder_right",0)
- game.contact_click("shoulder_left",1)
+ game.contact_click("shoulder_right")
+ game.contact_click("shoulder_left")
  await create_timer(4).timeout
  await RenderingServer.frame_post_draw
  root.get_texture().get_image().save_png(ProjectSettings.globalize_path("res://../builds/two-hands-preview.png"))

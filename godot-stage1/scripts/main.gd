@@ -268,7 +268,7 @@ func build() -> void:
 			zone.add_theme_stylebox_override(style,StyleBoxEmpty.new())
 		zone.gui_input.connect(func(event: InputEvent):
 			if event is InputEventMouseButton and event.pressed and event.button_index in [MOUSE_BUTTON_LEFT,MOUSE_BUTTON_RIGHT]:
-				contact_click(part,1 if event.button_index==MOUSE_BUTTON_RIGHT else active_hand)
+				contact_click(part,1 if event.button_index==MOUSE_BUTTON_RIGHT else -1)
 				zone.accept_event())
 		stage.add_child(zone)
 	hand=TextureRect.new()
@@ -765,8 +765,14 @@ func select_hand(side: int) -> void:
 	active_hand=side
 	refresh_contacts()
 
-func contact_click(part: String, side: int) -> void:
+func contact_click(part: String, side: int = -1) -> void:
 	if player_turn or state.ended() or state.phase in ["withdraw","block","recover"]:return
+	if side<0:
+		# Ordinary clicks reuse the hand on this target, then allocate a free hand.
+		side=contacts.find(part)
+		if side<0:
+			side=active_hand
+			if contacts[side]!="" and contacts[1-side]=="":side=1-side
 	# Each hand has one assignment; an occupied target cannot create a third hand.
 	if contacts[1-side]==part:return
 	contact_frames[side]=1-contact_frames[side] if contacts[side]==part else 0
