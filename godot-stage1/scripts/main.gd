@@ -78,6 +78,7 @@ var shoulder_material: ShaderMaterial
 var shoulder_hand: TextureRect
 var shoulder_folds: TextureRect
 var shoulder_hand_frames: Array[Texture2D]=[]
+var contact_art: Array[Texture2D]=[]
 var shoulder_held: bool = false
 var shoulder_pressure: float = 0.0
 var shoulder_visibility: float = 0.0
@@ -88,8 +89,25 @@ var contact_frames: Array[int] = [0, 0]
 var contact_sprites: Array[TextureRect] = []
 var hand_buttons: Array[Button] = []
 var reset_hands: Button
-const CONTACT_POINTS = {"head":Vector2(.50,.045), "cheek":Vector2(.53,.135), "shoulder":Vector2(.65,.225), "arm_left":Vector2(.31,.37), "arm_right":Vector2(.70,.37), "hand_left":Vector2(.27,.535), "hand_right":Vector2(.74,.535), "waist":Vector2(.54,.405)}
-const CONTACT_NAMES = {"":"", "head":"頭", "cheek":"頬", "shoulder":"肩", "arm_left":"腕", "arm_right":"腕", "hand_left":"手", "hand_right":"手", "waist":"腰"}
+# Anatomical sides belong to Natsuki: her right is the viewer's left.
+const CONTACT_POINTS = {
+ "head":Vector2(.50,.065),
+ "cheek_right":Vector2(.425,.143), "cheek_left":Vector2(.555,.143),
+ "shoulder_right":Vector2(.335,.225), "shoulder_left":Vector2(.655,.225),
+ "arm_right":Vector2(.315,.345), "arm_left":Vector2(.675,.345),
+ "hand_right":Vector2(.273,.535), "hand_left":Vector2(.717,.535),
+ "waist_right":Vector2(.375,.395), "waist_left":Vector2(.625,.395)
+}
+const CONTACT_ZONES = {
+ "head":Rect2(.35,.025,.29,.085),
+ "cheek_right":Rect2(.38,.12,.09,.06), "cheek_left":Rect2(.52,.12,.09,.06),
+ "shoulder_right":Rect2(.285,.21,.105,.055), "shoulder_left":Rect2(.605,.21,.105,.055),
+ "arm_right":Rect2(.275,.28,.08,.12), "arm_left":Rect2(.635,.28,.08,.12),
+ "hand_right":Rect2(.235,.50,.075,.075), "hand_left":Rect2(.68,.50,.075,.075),
+ "waist_right":Rect2(.345,.37,.065,.06), "waist_left":Rect2(.59,.37,.065,.06)
+}
+const CONTACT_NAMES = {"":"", "head":"頭", "cheek_right":"右頬", "cheek_left":"左頬", "shoulder_right":"右肩", "shoulder_left":"左肩", "arm_right":"右腕", "arm_left":"左腕", "hand_right":"右手", "hand_left":"左手", "waist_right":"右腰", "waist_left":"左腰"}
+
 var player_dialog: Panel
 var player_speaker: Label
 var player_text: Label
@@ -217,6 +235,7 @@ func build() -> void:
 	shoulder_hand=TextureRect.new()
 	for frame_name in ["contact","half","pressed"]:
 		shoulder_hand_frames.append(load("res://assets/knead-hand-"+frame_name+"-v1.png"))
+	contact_art.assign([load("res://assets/hand-right-open-v2.png"),load("res://assets/hand-right-flex-v2.png")])
 	shoulder_hand.texture=shoulder_hand_frames[0]
 	for layer in [shoulder_folds,shoulder_hand]:
 		layer.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
@@ -240,7 +259,7 @@ func build() -> void:
 		shell.add_child(selector)
 	reset_hands=button("リセット",cancel_shoulder)
 	shell.add_child(reset_hands)
-	for part in ["head","cheek","shoulder","arm_left","arm_right","hand_left","hand_right","waist"]:
+	for part in CONTACT_ZONES:
 		var zone = Button.new()
 		zone.name=part
 		zone.flat=true
@@ -475,10 +494,12 @@ func layout() -> void:
 	reset_hands.position=Vector2(272,h-55)
 	reset_hands.size=Vector2(100,44)
 	refresh_contacts()
-	var zones={"head":Rect2(.32,.025,.32,.075),"cheek":Rect2(.36,.10,.28,.075),"shoulder":Rect2(.58,.19,.16,.095),"arm_left":Rect2(.25,.30,.13,.18),"arm_right":Rect2(.64,.30,.13,.18),"hand_left":Rect2(.20,.49,.14,.09),"hand_right":Rect2(.68,.49,.14,.09),"waist":Rect2(.39,.38,.22,.075)}
+	var zones=CONTACT_ZONES
 	for part in zones:
 		var rect: Rect2 = zones[part]
+		if state.phase=="thanks" and part=="hand_left":rect=Rect2(.50,.37,.15,.05)
 		var zone: Control = stage.get_node(part)
+		zone.visible=not (state.phase=="thanks" and part=="waist_left")
 		zone.position=portrait_home+rect.position*portrait.size
 		zone.size=rect.size*portrait.size
 	var bubble_width: float = 164 if w<500 else 235
@@ -636,6 +657,7 @@ func show_scene(write: bool = true, keep_player: bool = false) -> void:
 	busy=true
 	var scene: Dictionary=state.scene()
 	set_pose(SWAT if state.phase=="rejected" else BLOCK if state.phase=="block" else RECEIVE if state.phase=="thanks" else FACES.calm)
+	layout()
 	eye_overlay.hide()
 	blink_elapsed=-1
 	blink_clock=0
@@ -749,8 +771,9 @@ func contact_click(part: String, side: int) -> void:
 	if contacts[1-side]==part:return
 	contact_frames[side]=1-contact_frames[side] if contacts[side]==part else 0
 	contacts[side]=part
-	if not busy and part in ["head","cheek","shoulder"]:
-		touch(part)
+	var action=part.split("_")[0]
+	if not busy and action in ["head","cheek","shoulder"]:
+		touch(action)
 		if state.phase in ["withdraw","block","rejected"]:
 			contacts[side]=""
 	refresh_contacts()
@@ -765,6 +788,10 @@ func cancel_shoulder() -> void:
 	if is_instance_valid(shoulder_folds):shoulder_folds.hide()
 	refresh_contacts()
 
+func contact_point(part: String) -> Vector2:
+	if state.phase=="thanks" and part=="hand_left":return Vector2(.58,.40)
+	return CONTACT_POINTS[part]
+
 func refresh_contacts() -> void:
 	for side in range(contact_sprites.size()):
 		var sprite=contact_sprites[side]
@@ -773,19 +800,17 @@ func refresh_contacts() -> void:
 		hand_buttons[side].set_pressed_no_signal(active_hand==side)
 		hand_buttons[side].text=("左手" if side==0 else "右手")+(" · "+CONTACT_NAMES[part] if part!="" else "")
 		if part.is_empty():continue
-		var frame=contact_frames[side]*2
-		var registration: Dictionary=KNEAD_REGISTRATION.data[["contact","half","pressed"][frame]]
-		var sprite_scale=portrait.size.y*.020/float(registration.wrist_height)
-		sprite.texture=shoulder_hand_frames[frame]
-		sprite.size=Vector2(registration.size[0],registration.size[1])*sprite_scale
+		sprite.texture=contact_art[contact_frames[side]]
+		# One anatomical hand, mirrored into its opposite. Thumb points inward.
 		sprite.flip_h=side==0
-		# Mirror the contact point as well as the art, so both hands meet their target.
-		var grip=Vector2(.38 if side==1 else .62,.65)*sprite.size
-		sprite.position=portrait.size*CONTACT_POINTS[part]-grip
+		sprite.size=Vector2.ONE*portrait.size.y*.080
+		sprite.rotation=deg_to_rad(-12 if side==0 else 12)
+		var grip=Vector2(.5,.54)*sprite.size
+		sprite.position=portrait.size*contact_point(part)-grip.rotated(sprite.rotation)
 	if is_instance_valid(reset_hands):reset_hands.disabled=contacts[0]=="" and contacts[1]==""
 
 func begin_shoulder() -> void:
-	contact_click("shoulder",active_hand)
+	contact_click("shoulder_left",active_hand)
 
 func release_shoulder() -> void:
 	pass

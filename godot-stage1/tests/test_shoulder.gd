@@ -22,18 +22,18 @@ func run() -> void:
  game.set_process(false)
  game.busy=false
  var home=game.portrait.position
- click_zone(game,"shoulder",MOUSE_BUTTON_LEFT)
+ click_zone(game,"shoulder_left",MOUSE_BUTTON_LEFT)
  click_zone(game,"arm_left",MOUSE_BUTTON_RIGHT)
- check(game.contacts==["shoulder","arm_left"],"Two independent hands occupy two targets")
+ check(game.contacts==["shoulder_left","arm_left"],"Two independent hands occupy two targets")
  var positions=[game.contact_sprites[0].position,game.contact_sprites[1].position]
  var textures=[game.contact_sprites[0].texture,game.contact_sprites[1].texture]
  await create_timer(4).timeout
- check(game.contacts==["shoulder","arm_left"] and game.contact_sprites[0].visible and game.contact_sprites[1].visible,"Release and idle never remove either hand")
+ check(game.contacts==["shoulder_left","arm_left"] and game.contact_sprites[0].visible and game.contact_sprites[1].visible,"Release and idle never remove either hand")
  check(game.contact_sprites[0].position==positions[0] and game.contact_sprites[1].position==positions[1],"Hands never move automatically")
- click_zone(game,"shoulder",MOUSE_BUTTON_LEFT)
+ click_zone(game,"shoulder_left",MOUSE_BUTTON_LEFT)
  check(game.contact_sprites[0].texture!=textures[0] and game.contact_sprites[1].texture==textures[1],"Click articulates only selected hand")
  click_zone(game,"arm_left",MOUSE_BUTTON_LEFT)
- check(game.contacts==["shoulder","arm_left"],"Occupied target does not duplicate or steal a hand")
+ check(game.contacts==["shoulder_left","arm_left"],"Occupied target does not duplicate or steal a hand")
  click_zone(game,"arm_right",MOUSE_BUTTON_LEFT)
  check(game.contacts==["arm_right","arm_left"],"Moving one hand preserves the other")
  game.show_scene(false)
@@ -48,15 +48,19 @@ func run() -> void:
  check(game.contacts==["","arm_left"],"Refusal releases only the rejected hand")
  game.reset_hands.pressed.emit()
  check(game.contacts==["",""] and not game.contact_sprites[0].visible and not game.contact_sprites[1].visible,"Reset releases both hands")
- for part in ["head","cheek","shoulder","arm_left","arm_right","hand_left","hand_right","waist"]:
+ for part in game.CONTACT_ZONES:
   check(game.stage.get_node(part).tooltip_text.is_empty(),"No touch tooltips")
  game.state.phase="question"
  game.busy=false
  click_zone(game,"hand_left",MOUSE_BUTTON_LEFT)
- click_zone(game,"waist",MOUSE_BUTTON_RIGHT)
- check(game.contacts==["hand_left","waist"],"Hand and waist use the same two-slot ownership")
+ click_zone(game,"waist_left",MOUSE_BUTTON_RIGHT)
+ check(game.contacts==["hand_left","waist_left"],"Hand and waist use the same two-slot ownership")
  click_zone(game,"hand_right",MOUSE_BUTTON_LEFT)
- check(game.contacts==["hand_right","waist"],"Either character hand can be selected independently of waist")
+ check(game.contacts==["hand_right","waist_left"],"Either character hand can be selected independently of waist")
+ for pair in [["shoulder_right","shoulder_left"],["waist_right","waist_left"],["hand_right","hand_left"]]:
+  check(game.CONTACT_POINTS[pair[0]].x<.5 and game.CONTACT_POINTS[pair[1]].x>.5,"Anatomical right/left maps to opposite screen sides")
+  check(not game.CONTACT_ZONES[pair[0]].intersects(game.CONTACT_ZONES[pair[1]]),"Paired targets do not overlap")
+ check(game.contact_sprites[0].flip_h and not game.contact_sprites[1].flip_h,"Left and right hands have opposite thumb silhouettes")
  await create_timer(12).timeout
  game.queue_free()
  await process_frame

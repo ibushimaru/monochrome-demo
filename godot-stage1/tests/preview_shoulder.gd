@@ -12,11 +12,18 @@ func run() -> void:
  await create_timer(4).timeout
  game.close_view=true
  game.layout()
- game.contact_click("shoulder",0)
- game.contact_click("arm_left",1)
+ game.contact_click("shoulder_right",0)
+ game.contact_click("shoulder_left",1)
  await create_timer(4).timeout
  await RenderingServer.frame_post_draw
  root.get_texture().get_image().save_png(ProjectSettings.globalize_path("res://../builds/two-hands-preview.png"))
+ for pair in [["waist_right","waist_left"],["hand_right","hand_left"]]:
+  game.cancel_shoulder()
+  game.contact_click(pair[0],0)
+  game.contact_click(pair[1],1)
+  await process_frame
+  await RenderingServer.frame_post_draw
+  root.get_texture().get_image().save_png(ProjectSettings.globalize_path("res://../builds/"+pair[0]+"-preview.png"))
  game.queue_free()
  await process_frame
  quit()
