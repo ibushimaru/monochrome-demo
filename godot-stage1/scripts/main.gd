@@ -187,6 +187,9 @@ func build() -> void:
 	var menu=button("メニュー",func():game_menu.popup_centered(Vector2i(360,260)))
 	menu.name="SettingsButton"
 	shell.add_child(menu)
+	var scene_two_button=button("シーン2",func():get_tree().change_scene_to_file("res://scene_two.tscn"))
+	scene_two_button.name="SceneTwoButton"
+	shell.add_child(scene_two_button)
 	resume_button=button("続きから",resume_game)
 
 	stage=Control.new()
@@ -470,6 +473,8 @@ func layout() -> void:
 	meter.size=Vector2(130,6)
 	shell.get_node("SettingsButton").position=Vector2(w-114,14)
 	shell.get_node("SettingsButton").size=Vector2(104,44)
+	shell.get_node("SceneTwoButton").position=Vector2(14,14)
+	shell.get_node("SceneTwoButton").size=Vector2(120,44)
 	student_card.position=Vector2(14,84)
 	student_card.size=Vector2(230,148)
 	var sh: float = maxf(200,h-402)
