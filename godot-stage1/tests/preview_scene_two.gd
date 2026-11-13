@@ -5,18 +5,15 @@ func run() -> void:
  var game=load("res://scene_two.tscn").instantiate()
  root.add_child(game)
  await process_frame
- game.contact("cheek_right",Vector2(.425,.145))
- game.contact("cheek_left",Vector2(.565,.145))
- await process_frame
- await RenderingServer.frame_post_draw
- root.get_texture().get_image().save_png(ProjectSettings.globalize_path("res://../builds/scene2-preview.png"))
- for progress in [0.0,.5,1.0]:
-  game.stroke_progress[0]=progress
-  game.points[0]=game.stroke_point("cheek_right",progress)
-  game.refresh()
+ game.set_process(false)
+ var output=ProjectSettings.globalize_path("res://../builds/cheek-cels-preview")
+ DirAccess.make_dir_recursive_absolute(output)
+ for frame in range(120):
+  if frame==12 or frame==65:game.contact("cheek_right",Vector2.ZERO)
+  game.update_animation(1.0/30.0)
   await process_frame
   await RenderingServer.frame_post_draw
-  root.get_texture().get_image().save_png(ProjectSettings.globalize_path("res://../builds/stroke-%d.png" % int(progress*100)))
+  root.get_texture().get_image().save_png(output+"/%03d.png" % frame)
  game.queue_free()
  await process_frame
  quit()
