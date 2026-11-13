@@ -61,7 +61,7 @@ func run() -> void:
  check(game.contacts==["", ""],"Reset clears both views")
  for view in game.views:
   check(not view.hands[0].visible and not view.hands[1].visible,"Reset hides both hand renderings")
- check(ProjectSettings.get_setting("application/run/main_scene")=="res://scene_two.tscn","App starts directly in scene two")
+ check(ProjectSettings.get_setting("application/run/main_scene")=="res://title.tscn","App starts at scene selection")
  game.queue_free()
  await process_frame
  await create_timer(.2).timeout

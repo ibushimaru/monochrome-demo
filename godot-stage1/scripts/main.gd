@@ -187,7 +187,7 @@ func build() -> void:
 	var menu=button("メニュー",func():game_menu.popup_centered(Vector2i(360,260)))
 	menu.name="SettingsButton"
 	shell.add_child(menu)
-	var scene_two_button=button("シーン2",func():get_tree().change_scene_to_file("res://scene_two.tscn"))
+	var scene_two_button=button("シーン選択",func():get_tree().change_scene_to_file("res://title.tscn"))
 	scene_two_button.name="SceneTwoButton"
 	shell.add_child(scene_two_button)
 	resume_button=button("続きから",resume_game)

@@ -31,7 +31,7 @@ func _ready() -> void:
  background.modulate=Color(1,1,1,.28)
  background.mouse_filter=Control.MOUSE_FILTER_IGNORE
  add_child(background)
- scene_one=make_button("シーン1",func():get_tree().change_scene_to_file("res://main.tscn"))
+ scene_one=make_button("シーン選択",func():get_tree().change_scene_to_file("res://title.tscn"))
  scene_two=make_button("シーン2",func():pass)
  scene_two.disabled=true
  build_view(false)
