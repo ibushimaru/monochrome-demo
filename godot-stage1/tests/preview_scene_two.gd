@@ -10,6 +10,13 @@ func run() -> void:
  await process_frame
  await RenderingServer.frame_post_draw
  root.get_texture().get_image().save_png(ProjectSettings.globalize_path("res://../builds/scene2-preview.png"))
+ for progress in [0.0,.5,1.0]:
+  game.stroke_progress[0]=progress
+  game.points[0]=game.stroke_point("cheek_right",progress)
+  game.refresh()
+  await process_frame
+  await RenderingServer.frame_post_draw
+  root.get_texture().get_image().save_png(ProjectSettings.globalize_path("res://../builds/stroke-%d.png" % int(progress*100)))
  game.queue_free()
  await process_frame
  quit()
