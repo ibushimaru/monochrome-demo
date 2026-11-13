@@ -2,9 +2,11 @@ extends Control
 const Definitions=preload("res://scripts/main.gd")
 const PORTRAIT=preload("res://assets/full-smile.png")
 const HANDS=[preload("res://assets/hand-right-open-v2.png"),preload("res://assets/hand-right-flex-v2.png")]
-const CHEEK_CELS=preload("res://assets/cheek-cels-v1.png")
 const SOFT_FACE=preload("res://assets/cheek-expression-soft-v1.png")
 const CLOSED_FACE=preload("res://assets/cheek-expression-closed-v1.png")
+var expression_comfort: float=0.0
+var expression_closed: float=0.0
+const CHEEK_POSES=preload("res://assets/cheek-three-poses-v2.png")
 const FONT=preload("res://assets/NotoSansJP-Medium.ttf")
 const FACE_CROP=Rect2(.25,0,.5,.25)
 var trust: int=60
@@ -13,11 +15,10 @@ var frames: Array[int]=[0,0]
 var points: Array[Vector2]=[Vector2.ZERO,Vector2.ZERO]
 var active_hand: int=0
 var requested_hand: int=-1
-const STROKE_DURATION=1.25
-var cel_progress: Array[float]=[0.0,0.0]
-var cel_playing: Array[bool]=[false,false]
-var expression_comfort: float=0.0
-var expression_closed: float=0.0
+const STROKE_DURATION=1.8
+var stroke_progress: Array[float]=[0.0,0.0]
+var stroke_elapsed: Array[float]=[0.0,0.0]
+var stroke_playing: Array[bool]=[false,false]
 var views: Array[Dictionary]=[]
 var selectors: Array[Button]=[]
 var reset_button: Button
@@ -93,7 +94,7 @@ func build_view(closeup: bool) -> void:
     hand.accept_event())
   hand.flip_h=side==0
   var material=ShaderMaterial.new()
-  material.shader=preload("res://shaders/cheek_cels.gdshader")
+  material.shader=preload("res://shaders/three_pose_hand.gdshader")
   hand.material=material
   canvas.add_child(hand)
   hands.append(hand)
@@ -144,7 +145,7 @@ func layout() -> void:
  reset_button.size=Vector2(112,44)
  refresh()
 
-func zone_input(event: InputEvent, part: String, zone: Control, canvas: Control) -> void:
+func zone_input(event: InputEvent, part: String, zone: Control, _canvas: Control) -> void:
  if event is InputEventMouseButton and event.pressed and event.button_index in [MOUSE_BUTTON_LEFT,MOUSE_BUTTON_RIGHT]:
   contact(part,Definitions.CONTACT_POINTS[part],1 if event.button_index==MOUSE_BUTTON_RIGHT else requested_hand)
   requested_hand=-1
@@ -156,38 +157,39 @@ func contact(part: String, point: Vector2, side: int=-1) -> int:
   if side<0:side=0 if part.ends_with("_right") else 1 if part.ends_with("_left") else active_hand
  if contacts[1-side]==part:return -1
  var same_target=contacts[side]==part
- if cel_playing[side] and same_target:return side
+ if same_target and stroke_playing[side]:return side
  frames[side]=1-frames[side] if same_target else 0
  contacts[side]=part
- points[side]=Definitions.CONTACT_POINTS[part]
- cel_playing[side]=false
- cel_progress[side]=0.0
- if part.begins_with("cheek_"):play_stroke(side)
+ stroke_playing[side]=false
+ stroke_progress[side]=0.0
+ if part.begins_with("cheek_"):
+  points[side]=stroke_point(part,0.0)
+  play_stroke(side)
+ else:
+  points[side]=point
  refresh()
  return side
 
+func stroke_point(part: String, progress: float) -> Vector2:
+ var point=Vector2(.44,.163).bezier_interpolate(Vector2(.425,.157),Vector2(.407,.160),Vector2(.395,.158),progress)
+ if part=="cheek_left":point.x=1.0-point.x
+ return point
+
 func play_stroke(side: int) -> void:
- if cel_playing[side]:return
- cel_progress[side]=0.0
- cel_playing[side]=true
- refresh()
+ if stroke_playing[side]:return
+ stroke_elapsed[side]=0.0
+ stroke_progress[side]=0.0
+ stroke_playing[side]=true
 
-func update_animation(delta: float) -> void:
- var response: float=0.0
- var touching=false
+func update_strokes(delta: float) -> void:
  for side in range(2):
-  if contacts[side].begins_with("cheek_"):
-   touching=true
-   if cel_playing[side]:
-    cel_progress[side]=minf(1.0,cel_progress[side]+delta/STROKE_DURATION)
-    response=maxf(response,sin(cel_progress[side]*PI))
-    if cel_progress[side]>=1.0:cel_playing[side]=false
- expression_comfort=move_toward(expression_comfort,1.0 if touching else 0.0,delta*4.0)
- expression_closed=move_toward(expression_closed,response,delta*4.0)
+  if stroke_playing[side]:
+   stroke_elapsed[side]=minf(STROKE_DURATION,stroke_elapsed[side]+delta)
+   var phase=stroke_elapsed[side]/STROKE_DURATION
+   stroke_progress[side]=(1.0-cos(phase*TAU))*.5
+   points[side]=stroke_point(contacts[side],stroke_progress[side])
+   if phase>=1.0:stroke_playing[side]=false
  refresh()
-
-func _process(delta: float) -> void:
- update_animation(delta)
 
 func refresh() -> void:
  if selectors.size()!=2:return
@@ -198,35 +200,34 @@ func refresh() -> void:
    var hand: TextureRect=view.hands[side]
    hand.visible=contacts[side]!=""
    var stroking=contacts[side].begins_with("cheek_")
-   if stroking:
-    hand.texture=CHEEK_CELS
-    hand.material.set_shader_parameter("frame_position",cel_progress[side]*6.0)
-    hand.use_parent_material=false
-    hand.flip_h=side==1
-    hand.size=Vector2.ONE*view.canvas.size.y*.095
-    hand.rotation=0.0
-    var anchor=Vector2(.65 if side==0 else .35,.22)
-    hand.position=points[side]*view.canvas.size-hand.size*anchor
-   else:
-    hand.texture=HANDS[frames[side]]
-    hand.use_parent_material=true
-    hand.flip_h=side==0
-    hand.size=Vector2.ONE*view.canvas.size.y*.080
-    hand.rotation=deg_to_rad(-12 if side==0 else 12)
-    hand.position=points[side]*view.canvas.size-(hand.size*Vector2(.5,.54)).rotated(hand.rotation)
+   var progress=stroke_progress[side] if stroking else 0.0
+   hand.texture=CHEEK_POSES if stroking else HANDS[frames[side]]
+   hand.use_parent_material=not stroking
+   hand.material.set_shader_parameter("pose_index",round(progress*2.0))
+   hand.flip_h=side==0
+   hand.size=Vector2.ONE*view.canvas.size.y*(.070 if stroking else .080)
+   hand.rotation=deg_to_rad((-12 if side==0 else 12)+(progress*6.0*(-1.0 if side==0 else 1.0)))
+   hand.position=points[side]*view.canvas.size-(hand.size*Vector2(.5,.54)).rotated(hand.rotation)
+ if is_instance_valid(reset_button):reset_button.disabled=contacts==["", ""]
+
+func _process(delta: float) -> void:
+ update_strokes(delta)
+ var touching=contacts[0].begins_with("cheek_") or contacts[1].begins_with("cheek_")
+ # Expression follows contact, not every out-and-back stroke.
+ expression_comfort=move_toward(expression_comfort,1.0 if touching else 0.0,delta*3.0)
+ expression_closed=0.0
  for view in views:
   view.portrait.material.set_shader_parameter("comfort",expression_comfort)
   view.portrait.material.set_shader_parameter("closed",expression_closed)
- if is_instance_valid(reset_button):reset_button.disabled=contacts==["", ""]
 
 func reset_contacts() -> void:
  contacts.assign(["", ""])
  frames.assign([0,0])
- cel_progress.assign([0.0,0.0])
- cel_playing.assign([false,false])
+ stroke_progress.assign([0.0,0.0])
+ stroke_elapsed.assign([0.0,0.0])
+ stroke_playing.assign([false,false])
  requested_hand=-1
  refresh()
 
 func _input(_event: InputEvent) -> void:
- # Hand motion is authored cels, never pointer translation.
  pass
