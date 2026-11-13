@@ -84,6 +84,7 @@ var shoulder_pressure: float = 0.0
 var shoulder_visibility: float = 0.0
 var shoulder_contact_time: float = 0.0
 var active_hand: int = 0
+var requested_hand: int = -1
 var contacts: Array[String] = ["", ""]
 var contact_frames: Array[int] = [0, 0]
 var contact_sprites: Array[TextureRect] = []
@@ -268,7 +269,8 @@ func build() -> void:
 			zone.add_theme_stylebox_override(style,StyleBoxEmpty.new())
 		zone.gui_input.connect(func(event: InputEvent):
 			if event is InputEventMouseButton and event.pressed and event.button_index in [MOUSE_BUTTON_LEFT,MOUSE_BUTTON_RIGHT]:
-				contact_click(part,1 if event.button_index==MOUSE_BUTTON_RIGHT else -1)
+				contact_click(part,1 if event.button_index==MOUSE_BUTTON_RIGHT else requested_hand)
+				requested_hand=-1
 				zone.accept_event())
 		stage.add_child(zone)
 	hand=TextureRect.new()
@@ -763,16 +765,16 @@ func show_ending() -> void:
 
 func select_hand(side: int) -> void:
 	active_hand=side
+	requested_hand=side
 	refresh_contacts()
 
 func contact_click(part: String, side: int = -1) -> void:
 	if player_turn or state.ended() or state.phase in ["withdraw","block","recover"]:return
 	if side<0:
-		# Ordinary clicks reuse the hand on this target, then allocate a free hand.
+		# Reclick the existing hand; new paired targets use the corresponding screen side.
 		side=contacts.find(part)
 		if side<0:
-			side=active_hand
-			if contacts[side]!="" and contacts[1-side]=="":side=1-side
+			side=0 if part.ends_with("_right") else 1 if part.ends_with("_left") else active_hand
 	# Each hand has one assignment; an occupied target cannot create a third hand.
 	if contacts[1-side]==part:return
 	contact_frames[side]=1-contact_frames[side] if contacts[side]==part else 0
@@ -785,6 +787,7 @@ func contact_click(part: String, side: int = -1) -> void:
 	refresh_contacts()
 
 func cancel_shoulder() -> void:
+	requested_hand=-1
 	contacts.assign(["", ""])
 	contact_frames.assign([0, 0])
 	shoulder_held=false

@@ -31,6 +31,7 @@ func run() -> void:
  check(game.contacts==["shoulder_right","shoulder_left"] and game.contact_frames[0]==left_frame and game.contact_frames[1]==1,"Reclick moves only the hand already on that shoulder")
  game.cancel_shoulder()
  var home=game.portrait.position
+ game.select_hand(0)
  click_zone(game,"shoulder_left",MOUSE_BUTTON_LEFT)
  click_zone(game,"arm_left",MOUSE_BUTTON_RIGHT)
  check(game.contacts==["shoulder_left","arm_left"],"Two independent hands occupy two targets")
@@ -61,6 +62,7 @@ func run() -> void:
   check(game.stage.get_node(part).tooltip_text.is_empty(),"No touch tooltips")
  game.state.phase="question"
  game.busy=false
+ game.select_hand(0)
  click_zone(game,"hand_left",MOUSE_BUTTON_LEFT)
  click_zone(game,"waist_left",MOUSE_BUTTON_RIGHT)
  check(game.contacts==["hand_left","waist_left"],"Hand and waist use the same two-slot ownership")
@@ -70,6 +72,24 @@ func run() -> void:
   check(game.CONTACT_POINTS[pair[0]].x<.5 and game.CONTACT_POINTS[pair[1]].x>.5,"Anatomical right/left maps to opposite screen sides")
   check(not game.CONTACT_ZONES[pair[0]].intersects(game.CONTACT_ZONES[pair[1]]),"Paired targets do not overlap")
  check(game.contact_sprites[0].flip_h and not game.contact_sprites[1].flip_h,"Left and right hands have opposite thumb silhouettes")
+ # Every paired target, both click orders, including replacement while both occupied.
+ game.busy=true
+ for region in ["shoulder","arm","hand","waist","cheek"]:
+  for reversed_order in [false,true]:
+   game.cancel_shoulder()
+   var right=region+"_right"
+   var left=region+"_left"
+   click_zone(game,left if reversed_order else right,MOUSE_BUTTON_LEFT)
+   click_zone(game,right if reversed_order else left,MOUSE_BUTTON_LEFT)
+   check(game.contacts==[right,left],"Correct left/right ownership for "+region+" in either order")
+   check(game.contact_sprites[0].visible and game.contact_sprites[1].visible,"Both sprites visible for "+region)
+ game.cancel_shoulder()
+ click_zone(game,"shoulder_right",MOUSE_BUTTON_LEFT)
+ click_zone(game,"shoulder_left",MOUSE_BUTTON_LEFT)
+ click_zone(game,"waist_right",MOUSE_BUTTON_LEFT)
+ check(game.contacts==["waist_right","shoulder_left"],"Left hand moves to waist without stealing the right hand")
+ click_zone(game,"hand_left",MOUSE_BUTTON_LEFT)
+ check(game.contacts==["waist_right","hand_left"],"Right hand moves to hand without stealing the left hand")
  await create_timer(12).timeout
  game.queue_free()
  await process_frame
