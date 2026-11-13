@@ -81,6 +81,7 @@ var shoulder_hand_frames: Array[Texture2D]=[]
 var shoulder_held: bool = false
 var shoulder_pressure: float = 0.0
 var shoulder_visibility: float = 0.0
+var shoulder_contact_time: float = 0.0
 var player_dialog: Panel
 var player_speaker: Label
 var player_text: Label
@@ -220,7 +221,6 @@ func build() -> void:
 		zone.name=part
 		zone.flat=true
 		zone.mouse_default_cursor_shape=Control.CURSOR_POINTING_HAND
-		zone.tooltip_text={"head":"頭に手を伸ばす","cheek":"頬に手を伸ばす","shoulder":"押して肩を揉む・離して力を抜く"}[part]
 		for style in ["normal","hover","pressed"]:
 			zone.add_theme_stylebox_override(style,StyleBoxEmpty.new())
 		if part=="shoulder":
@@ -241,7 +241,6 @@ func build() -> void:
 	for style in ["normal","hover","pressed"]:
 		wallet.add_theme_stylebox_override(style,StyleBoxEmpty.new())
 	wallet.add_theme_font_size_override("font_size",40)
-	wallet.tooltip_text="落ちた定期入れを知らせる"
 	wallet.rotation=-0.15
 	stage.add_child(wallet)
 	bubble=Panel.new()
@@ -402,7 +401,6 @@ func build_menu() -> void:
 	store_card.custom_minimum_size=Vector2(28,28)
 	store_card.position=Vector2(190,8)
 	store_card.size=Vector2(28,28)
-	store_card.tooltip_text="所持品にしまう"
 	student_card.add_child(store_card)
 	refresh_card()
 
@@ -706,7 +704,8 @@ func animate_touch(part: String, gesture: String) -> void:
 	hand.show()
 	tween=create_tween()
 	if gesture in ["withdraw","block","swat"]:
-		tween.tween_property(hand,"modulate:a",0.0,.18)
+		tween.tween_interval(.55)
+		tween.tween_property(hand,"modulate:a",0.0,.30)
 	else:
 		tween.tween_interval(.5)
 		tween.tween_property(hand,"modulate:a",0.0,.2)
@@ -734,6 +733,7 @@ func begin_shoulder() -> void:
 	# Story reactions keep their existing cooldown; the physical gesture follows input.
 	if not busy:touch("shoulder")
 	shoulder_held=true
+	shoulder_contact_time=.65
 	if tween and tween.is_valid():tween.kill()
 	hand.hide()
 
@@ -741,6 +741,7 @@ func release_shoulder() -> void:
 	shoulder_held=false
 
 func cancel_shoulder() -> void:
+	shoulder_contact_time=0.0
 	shoulder_held=false
 	shoulder_pressure=0.0
 	shoulder_visibility=0.0
@@ -751,8 +752,11 @@ func cancel_shoulder() -> void:
 
 func update_shoulder(delta: float) -> void:
 	if not is_instance_valid(shoulder_material):return
-	shoulder_pressure=(1.0 if shoulder_held else 0.0) if reduce_motion else move_toward(shoulder_pressure,1.0 if shoulder_held else 0.0,delta/(.22 if shoulder_held else .28))
-	var visible_target=1.0 if shoulder_held or shoulder_pressure>0.0 else 0.0
+	# A short click completes one visible squeeze; holding extends the contact.
+	var pressing=shoulder_held or shoulder_contact_time>0.0
+	shoulder_contact_time=maxf(0.0,shoulder_contact_time-delta)
+	shoulder_pressure=(1.0 if pressing else 0.0) if reduce_motion else move_toward(shoulder_pressure,1.0 if pressing else 0.0,delta/(.22 if pressing else .35))
+	var visible_target=1.0 if pressing or shoulder_pressure>0.0 else 0.0
 	shoulder_visibility=move_toward(shoulder_visibility,visible_target,delta/.08)
 	shoulder_material.set_shader_parameter("pressure",shoulder_pressure)
 	shoulder_hand.visible=shoulder_visibility>0.0

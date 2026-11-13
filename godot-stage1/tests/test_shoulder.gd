@@ -51,6 +51,18 @@ func run() -> void:
 	check(game.shoulder_pressure>0 and game.shoulder_pressure<1,"Release relaxes through intermediate pose")
 	game.update_shoulder(.3)
 	check(is_zero_approx(game.shoulder_visibility),"Release outside target removes hand and folds")
+	game.busy=false
+	game.begin_shoulder()
+	game.release_shoulder()
+	game.update_shoulder(.016)
+	game.update_shoulder(.22)
+	check(game.shoulder_pressure>.99 and game.shoulder_folds.modulate.a>0.5,"Quick click reaches visible compressed cloth instead of flashing away")
+	game.update_shoulder(.42)
+	game.update_shoulder(.4)
+	game.update_shoulder(.1)
+	check(is_zero_approx(game.shoulder_visibility),"Quick click completes and clears without another input")
+	for part in ["head","cheek","shoulder"]:
+		check(game.stage.get_node(part).tooltip_text.is_empty(),"Touch zones have no explanatory tooltips")
 	game.shoulder_held=true
 	game.update_shoulder(.3)
 	game._notification(Control.NOTIFICATION_APPLICATION_FOCUS_OUT)
